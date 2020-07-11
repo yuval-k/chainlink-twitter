@@ -2,7 +2,12 @@ var erc20 = [{"constant":true,"inputs":[],"name":"mintingFinished","outputs":[{"
 
 function transfer(linkToken, linkOwner, nodeaddr) {
     var linkContract = web3.eth.contract(erc20).at(linkToken);
-    return linkContract.transfer(nodeaddr, 100, {from:linkOwner});
+    return linkContract.transfer(nodeaddr, 1000, {from:linkOwner});
+}
+
+function getbalance(linkToken, addr) {
+    var linkContract = web3.eth.contract(erc20).at(linkToken);
+    return linkContract.balanceOf(addr, {from:linkOwner});
 }
 
 if (!web3) {
