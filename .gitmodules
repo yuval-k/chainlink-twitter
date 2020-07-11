@@ -1,0 +1,3 @@
+[submodule "LinkToken"]
+	path = LinkToken
+	url = https://github.com/smartcontractkit/LinkToken

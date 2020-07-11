@@ -1,0 +1,5 @@
+FROM node:12.18.2
+
+RUN npm install -g ganache-cli
+
+ENTRYPOINT [ "/usr/local/bin/ganache-cli" ]

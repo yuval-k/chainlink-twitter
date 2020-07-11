@@ -1,0 +1,108 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: chainlink
+stringData:
+  api: "foo@example.com\napipassword"
+  password: "password"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chainlink
+spec:
+  selector:
+    matchLabels:
+      app: chainlink
+  template:
+    metadata:
+      labels:
+        app: chainlink
+    spec:
+      containers:
+      - name: chainlink
+        image: smartcontract/chainlink
+        args:
+          - local
+          - "n"
+          - -p 
+          - /chainlink/secrets/.password
+          - -a
+          - /chainlink/secrets/.api
+        env:
+          - name: ROOT
+            value: /chainlink
+          - name: ETH_URL
+            value: ws://ganache:8545
+          - name: LOG_LEVEL
+            value: debug
+          - name: MIN_OUTGOING_CONFIRMATIONS
+            value: "2"
+          # i think ganache is hardcoded to this number?!
+          - name: "ETH_CHAIN_ID"
+            value: "1337"
+          - name: LINK_CONTRACT_ADDRESS
+            value: "0x5b1869d9a4c187f2eaa108f3062412ecf0526b24"
+          - name: "CHAINLINK_TLS_PORT"
+            value: "0"
+          - name: "SECURE_COOKIES"
+            value: "false"
+          - name: "ALLOW_ORIGINS"
+            value: "*"
+          - name: DATABASE_URL
+            value: postgresql://postgres:aBHBQ37PkR@release-postgresql:5432/chainlink?sslmode=disable
+
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 6688
+        volumeMounts:
+        - mountPath: /chainlink
+          name: root
+        - mountPath: /chainlink/secrets
+          name: config
+
+      volumes:
+        - name: root
+          emptyDir: {}
+        - name: config
+          secret:
+            secretName: chainlink
+            items:
+            - key: api
+              path: .api
+            - key: password
+              path: .password
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: createdb
+spec:
+  template:
+    spec:
+      containers:
+      - name: db
+        image: docker.io/bitnami/postgresql:11.8.0-debian-10-r57
+        command: ["psql"]
+        args:
+          - -c
+          - create database chainlink;
+        env:
+          - name: PGHOST
+            value: release-postgresql
+          - name: PGPORT
+            value: "5432"
+          - name: PGUSER
+            value: postgres
+          - name: PGPASSWORD
+            value: aBHBQ37PkR
+      restartPolicy: Never
+  backoffLimit: 4
+
