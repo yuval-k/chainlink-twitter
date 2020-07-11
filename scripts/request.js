@@ -1,5 +1,5 @@
-function request(contract, contractAddress, oracle, jobid) {
+function request(contract, contractAddress, requesterAddress, oracle, jobid) {
     var c = web3.eth.contract(contract).at(contractAddress);
-    console.log(c.address, oracle, jobid);
-    return c.requestEthereumPrice(oracle, jobid);
+    console.log("address: ", c.address, "requesterAddress: ", requesterAddress, "oracle: ", oracle, "jobid", jobid);
+    return c.requestEthereumPrice(oracle, jobid, {from: requesterAddress});
 }

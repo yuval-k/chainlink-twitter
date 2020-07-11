@@ -2,7 +2,8 @@ var erc20 = [{"constant":true,"inputs":[],"name":"mintingFinished","outputs":[{"
 
 function transfer(linkToken, linkOwner, nodeaddr) {
     var linkContract = web3.eth.contract(erc20).at(linkToken);
-    return linkContract.transfer(nodeaddr, 1000, {from:linkOwner});
+    // one link has 18 decmials; give 10 link
+    return linkContract.transfer(nodeaddr, 10*1000000000000000000, {from:linkOwner});
 }
 
 function getbalance(linkToken, addr) {
