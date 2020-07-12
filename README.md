@@ -1,15 +1,20 @@
-npm install --save ganache-cli web3 solc
+To get started I used ganache-cli and truffle, these can be installed with npm:
+```
+npm install --save ganache-cli truffle
+```
 
-go to chainlink source and do `make install` to build the contracts
+We'll start by creating a local setup in kubernetes. To keep things simple, we will us KinD to 
+setup everything on our laptop. Kubernetes is used so we can replicate the setup fast.
 
+# Prep work
 
-To generate the db yaml, use the following:
+To re-generate the db yaml, use the following:
 ```
 helm template release bitnami/postgresql > manifests/postgresql.yaml
 ```
-
-Deploy the infastrcture, starting with the ganache and the coin:
-we use ganache in deterministic mode, so ADDRESS and KEY should be the same everytime. you can see them in the ganache log output.
+# Deploy and test infra structure:
+Deploy the infrastructure, starting with the ganache and the coin:
+we use ganache in deterministic mode, so ADDRESS and KEY should be the same every time. you can see them in the ganache log output.
 
 ```bash
 make kind-start
@@ -21,7 +26,9 @@ make deploy-token
 ```
 
 you will see:
+```
   LinkToken: 0x5b1869d9a4c187f2eaa108f3062412ecf0526b24
+```
 
 
 Deploy chainlink node:
@@ -33,7 +40,7 @@ export LINK_TOKEN=0x5b1869d9a4c187f2eaa108f3062412ecf0526b24
 # verify that Link token 0x5b1869d9a4c187f2eaa108f3062412ecf0526b24
 make deploy-node
 
-#wait for node:
+# wait for node:
 kubectl rollout status deploy/chainlink
 
 # here too, sleep might help. if this comes empty, try again after a few seconds
@@ -42,7 +49,7 @@ export NODE_ADDR=$(kubectl logs deploy/chainlink|grep "please deposit ETH into y
 
 Fund the node with ETH and LINK
 ```bash
-# add eth to the node
+# add 10 eth to the node
 geth attach http://localhost:32000 -exec 'eth.sendTransaction({from: "'${ADDRESS}'",to: "'${NODE_ADDR}'", value: "10000000000000000000"})'
 
 # add link to the node
@@ -61,37 +68,27 @@ export ORACLE_ADDR=$(grep "contract-address" node-tmp.txt | cut -f 2)
 rm node-tmp.txt
 ```
 
-This part is silly, but I'm not sure how to setup api keys otherwise.
-port forward to the ui:
+Add jobs to the node:
+
+port forward to the ui/api/s:
 ```bash
 kubectl port-forward deploy/chainlink 6688&
 ```
-Log-in in the UI (foo@example.com/apipassword) and then open a js console and paste:
 
-```js
-response = await fetch("/v2/user/token", {
-  method: "post",
-  headers: {
-    "Accept": "application/json",
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({
-    "password": "apipassword"
-  })
-});
-body = await response.json();
-console.log("export ACCESS_KEY="+body.data.attributes.accessKey);
-console.log("export SECRET_KEY="+body.data.attributes.secret);
-```
-
-you should see output similar to this:
+Log-in in and get some auth tokens:
 ```bash
-export ACCESS_KEY=65505b0d8c6d4ef7a9566889087e1634
-export SECRET_KEY=/cFPLUGDi0iDi4aXnS+CsxLWNXhRTOkQXxO5Ne8Au+kLqKhjRz4QMXHL9nejlPtb
+curl -c cookiefile \
+  -d '{"email":"foo@example.com", "password":"apipassword"}' \
+  -X POST -H 'Content-Type: application/json' \
+   http://localhost:6688/sessions
+curl -b cookiefile http://localhost:6688/v2/user/token -X POST -H 'Content-Type: application/json' -d '{"password":"apipassword"}' > authtokens
+
+export ACCESS_KEY=$(jq '.data.attributes.accessKey' authtokens)
+export SECRET_KEY=$(jq '.data.attributes.secret' authtokens)
+rm authtokens cookie
 ```
 
-Paste it in the terminal before continuing. Now we can use the API keys to create the
-jobs:
+Now we can use the API keys to create the jobs:
 
 ```bash
 # optional: verify that the node sees its balances:
@@ -104,34 +101,36 @@ curl http://localhost:6688/v2/specs -XPOST -H"X-API-KEY: $ACCESS_KEY" -H"X-API-S
 
 curl http://localhost:6688/v2/specs -XPOST -H"X-API-KEY: $ACCESS_KEY" -H"X-API-SECRET: $SECRET_KEY" -H"content-type: application/json" -d '{"initiators":[{"type":"runlog","params":{"address":"'$ORACLE_ADDR'"}}],"tasks":[{"type":"httpget"},{"type":"jsonparse"},{"type":"multiply"},{"type":"ethint256"},{"type":"ethtx"}]}'
 
-curl http://localhost:6688/v2/specs -XPOST -H"X-API-KEY: $ACCESS_KEY" -H"X-API-SECRET: $SECRET_KEY" -H"content-type: application/json" -d '{"initiators":[{"type":"runlog","params":{"address":"'$ORACLE_ADDR'"}}],"tasks":[{"type":"httpget"},{"type":"jsonparse"},{"type":"multiply"},{"type":"ethuint256"},{"type":"ethtx"}]}'
+# save job id of EthUint256 as we need it for later
+JOB_ID=$(curl http://localhost:6688/v2/specs -XPOST -H"X-API-KEY: $ACCESS_KEY" -H"X-API-SECRET: $SECRET_KEY" -H"content-type: application/json" -d '{"initiators":[{"type":"runlog","params":{"address":"'$ORACLE_ADDR'"}}],"tasks":[{"type":"httpget"},{"type":"jsonparse"},{"type":"multiply"},{"type":"ethuint256"},{"type":"ethtx"}]}' | jq .data.id -r)
 
-
-# save job id of EthUint256
-JOB_ID=$(curl http://localhost:6688/v2/specs -XPOST -H"X-API-KEY: $ACCESS_KEY" -H"X-API-SECRET: $SECRET_KEY" -H"content-type: application/json" -d '{"initiators":[{"type":"runlog","params":{"address":"'$ORACLE_ADDR'"}}],"tasks":[{"type":"httpget"},{"type":"jsonparse"},{"type":"ethbool"},{"type":"ethtx"}]}' | jq .data.id -r)
+curl http://localhost:6688/v2/specs -XPOST -H"X-API-KEY: $ACCESS_KEY" -H"X-API-SECRET: $SECRET_KEY" -H"content-type: application/json" -d '{"initiators":[{"type":"runlog","params":{"address":"'$ORACLE_ADDR'"}}],"tasks":[{"type":"httpget"},{"type":"jsonparse"},{"type":"ethbool"},{"type":"ethtx"}]}'
 ```
 
+We now have the environment setup!
 Using the node!
 
-create a consumer:
+Create a consumer:
 
 ```bash
 npm run deploy-testconsumer | tee node-tmp.txt
 export TEST_CONTRACT_ADDR=$(grep "contract-address" node-tmp.txt | cut -f 2)
 rm node-tmp.txt
-# fund the contact:
+# fund the consumer contract:
 geth attach http://localhost:32000 --jspath ./scripts -exec 'loadScript("fund.js");transfer("'$LINK_TOKEN'", "'$ADDRESS'", "'$TEST_CONTRACT_ADDR'");'
-# verify funds contact:
+# verify funds contract:
 geth attach http://localhost:32000 --jspath ./scripts -exec 'loadScript("fund.js");getbalance("'$LINK_TOKEN'", "'$TEST_CONTRACT_ADDR'");'
 
-# create a script with our test contract
+# extract the contract interface to a script
 echo "var contract_ = " $(cat contracts/testconsumer/build/contracts/ATestnetConsumer.json|jq .abi) ";function contract() {return contract_;} " > scripts/contract.js
-
+# run a request with it:
 geth attach http://localhost:32000 --jspath ./scripts -exec 'loadScript("contract.js");loadScript("request.js");request(contract(), "'$TEST_CONTRACT_ADDR'", "'$ADDRESS'", "'$ORACLE_ADDR'", "'$JOB_ID'");'
 ```
 
-Hooray!
+You should see a job executed in the node UI! success!!
 
+
+# Debugging
 if we see failure, we can get transaction id and debug with truffle:
 ```bash
 kubectl logs deploy/ganache
