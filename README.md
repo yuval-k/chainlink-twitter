@@ -130,8 +130,13 @@ echo "var contract_ = " $(cat contracts/testconsumer/build/contracts/ATestnetCon
 geth attach http://localhost:32000 --jspath ./scripts -exec 'loadScript("contract.js");loadScript("request.js");request(contract(), "'$TEST_CONTRACT_ADDR'", "'$ADDRESS'", "'$ORACLE_ADDR'", "'$JOB_ID'");'
 ```
 
+Hooray!
+
 if we see failure, we can get transaction id and debug with truffle:
-```
+```bash
 kubectl logs deploy/ganache
+# get transaction id; go to the truffle directory containing the contract, and:
+../../node_modules/.bin/truffle debug --network ganache <transaction id>
 ```
+
 
