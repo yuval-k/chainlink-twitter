@@ -1,10 +1,38 @@
-To get started I used ganache-cli and truffle, these can be installed with npm:
+
+# Directory structure:
+```
+adapter - the adapter that confirms a contract in response to a tweet mentioning it's address.
+contracts - solidity contracts for oracle and consumers are here.
+docker - docker files for 3rd party program that are not available in docker hub. i.e. ganache-cli.
+LinkToken - git submodule to https://github.com/smartcontractkit/LinkToken. Used to deploy the Link token to our local test chain.
+manifests - kubernetes manifests to install everything automatically.
+scripts - Helper web3 JS scripts used in this readme to perform operations on the blockchain without the Remix GUI.
+```
+
+# Dev env setup
+To get started I used ganache-cli and truffle, for new projects, these can be installed with npm:
 ```
 npm install --save ganache-cli truffle
 ```
+As this step was already done, you just need to do
+```
+npm install
+```
+to install them locally from the saved package.json.
+In addition to `npm` (tested with node 10) you will need:
+- make
+- docker
+- kind
+- kubectl
+- jq
+- curl
+- geth
+
+For adapter development, you will need `pipenv`.
 
 We'll start by creating a local setup in kubernetes. To keep things simple, we will us KinD to 
-setup everything on our laptop. Kubernetes is used so we can replicate the setup fast.
+setup everything on our laptop. Kubernetes is used so we can replicate the setup fast in a reproducible fashion.
+This can also potentially run in CI systems.
 
 # Prep work
 

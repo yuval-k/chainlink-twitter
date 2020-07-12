@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: twitter-adapter
+spec:
+  selector:
+    matchLabels:
+      app: twitter-adapter
+  template:
+    metadata:
+      labels:
+        app: twitter-adapter
+    spec:
+      containers:
+      - name: twitter-adapter
+        image: gcr.io/google-containers/busybox
+        env:
+        - name: CHAINLINK_NODE
+        - name: OUTGOING_TOKEN
+        - name: INCOMING_TOKEN
+        - name: TWITTER_API_KEY
+        - name: TWITTER_API_KEY_SECRET
+        - name: TWITTER_ACCESS_TOKEN
+        - name: TWITTER_ACCESS_TOKEN_SECRET
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: twitter-adapter
+spec:
+  type: ClusterIP
+  selector:
+    app: twitter-adapter
+  ports:
+  - port: 8080
+    targetPort: 8080
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: twitter-adapter
+data:
+  key: value

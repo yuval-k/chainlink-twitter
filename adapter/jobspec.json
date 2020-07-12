@@ -1,0 +1,15 @@
+{
+    "initiators": [
+        {
+            "type": "runlog",
+            "params": {
+                "address": "'$ORACLE_ADDR'"
+            }
+        }
+    ],
+    "tasks": [
+        {
+            "type": "twitter"
+        }
+    ]
+}
