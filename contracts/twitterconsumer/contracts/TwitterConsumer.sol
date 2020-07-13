@@ -110,12 +110,12 @@ contract TwitterConsumer is ChainlinkClient {
         sendChainlinkRequestTo(oracle, req, ORACLE_PAYMENT);
     }
 
-    function fulfillApproval(bytes32 _requestId, bool _done, bool _approved)
+    function fulfillApproval(bytes32 _requestId, bool _approved)
         public
         recordChainlinkFulfillment(_requestId)
     {
-        if (!_done) {
-          return;
+        if (!_approved) {
+            return;
         }
         done = true;
         approved = _approved;

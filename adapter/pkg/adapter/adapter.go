@@ -2,16 +2,16 @@ package adapter
 
 import (
 	"bytes"
-	"crypto/subtle"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
 
 	"github.com/smartcontractkit/chainlink/core/store/models"
-	"github.com/smartcontractkit/chainlink/core/utils"
 	"github.com/yuval-k/chainlink-twitter/adapter/pkg/jobs"
+	"go.uber.org/zap"
 )
 
 type BridgeData struct {
@@ -40,9 +40,10 @@ type Bridge struct {
 
 	//	send jobs here
 	jobManager chan<- *jobs.Job
+	logger     *zap.SugaredLogger
 }
 
-func NewFromEnv(jobManager chan<- *jobs.Job) *Bridge {
+func NewFromEnv(logger *zap.SugaredLogger, jobManager chan<- *jobs.Job) *Bridge {
 	// http://host:port
 	node := os.Getenv("CHAINLINK_NODE")
 	nodeurl, err := url.Parse(node)
@@ -54,29 +55,37 @@ func NewFromEnv(jobManager chan<- *jobs.Job) *Bridge {
 		nodeAddress:        nodeurl,
 		toChainlinkToken:   os.Getenv("INCOMING_TOKEN"),
 		jobManager:         jobManager,
+
+		logger: logger,
 	}
 }
 
 var _ http.Handler = new(Bridge)
 
 func (b *Bridge) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-
-	authToken := utils.StripBearer(r.Header.Get("Authorization"))
-	if subtle.ConstantTimeCompare([]byte(b.fromChainlinkToken), []byte(authToken)) != 1 {
-		// TODO: don't panic
-		panic("unauthorized")
-	}
-
+	/*
+		authToken := utils.StripBearer(r.Header.Get("Authorization"))
+		if subtle.ConstantTimeCompare([]byte(b.fromChainlinkToken), []byte(authToken)) != 1 {
+			b.logger.Error("not authorized!")
+			http.Error(rw, "not authorized", http.StatusUnauthorized)
+			return
+		}
+	*/
 	var input BridgeInput
 	defer r.Body.Close()
 	d := json.NewDecoder(r.Body)
 	if err := d.Decode(&input); err != nil {
-		panic(err)
+		b.logger.Error("can't decode input!")
+		http.Error(rw, "can't decode input!", http.StatusUnprocessableEntity)
+		return
 	}
 	out, err := b.Run(&input)
 	if err != nil {
-		panic(err)
+		b.logger.Errorw("can't process job run!", "error", err)
+		http.Error(rw, "can't process job run!", http.StatusInternalServerError)
+		return
 	}
+	b.logger.Infow("job run success", "out", out)
 
 	e := json.NewEncoder(rw)
 	e.Encode(out)
@@ -93,11 +102,13 @@ func (b *Bridge) Run(input *BridgeInput) (*models.BridgeRunResult, error) {
 		finalurl := b.nodeAddress.ResolveReference(runpatch)
 		respUrl = finalurl.String()
 	}
+	b.logger.Infow("job run start", "respUrl", respUrl)
 
 	job := &jobs.Job{
 		Handle: input.Data.Handle,
 		Text:   input.Data.Text,
 		Callback: func(done, approved bool, err error) {
+			b.logger.Infow("job callback", "done", done, "approved", approved, "err", err)
 			var brr models.BridgeRunResult
 			if err != nil {
 				brr.Status = models.RunStatusErrored
@@ -117,14 +128,15 @@ func (b *Bridge) Run(input *BridgeInput) (*models.BridgeRunResult, error) {
 			}
 			err = b.Patch(respUrl, &brr)
 			if err != nil {
-				// TODO: do some retries / or log instead of panic
-				panic(err)
+				// TODO: do some retries? or is that the node's responsibility?/s
+				b.logger.Errorw("can't patch job!", "err", err)
 			}
 		},
 	}
 
 	// TODO: should i select here?
 	b.jobManager <- job
+	b.logger.Infow("job sent to manager", "job", job)
 
 	return &models.BridgeRunResult{
 		ExternalPending: true,
@@ -149,7 +161,10 @@ func (b *Bridge) Patch(respUrl string, result *models.BridgeRunResult) error {
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
+		errordata, _ := ioutil.ReadAll(resp.Body)
+		b.logger.Errorw("can't patch job!", "errordata", string(errordata), "statusCode", resp.StatusCode)
 		return fmt.Errorf("request failed " + resp.Status)
 	}
 	return nil

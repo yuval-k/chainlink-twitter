@@ -6,6 +6,7 @@ import (
 
 	"github.com/dghubble/go-twitter/twitter"
 	"github.com/dghubble/oauth1"
+	"go.uber.org/zap"
 )
 
 type TwitterClient interface {
@@ -14,9 +15,10 @@ type TwitterClient interface {
 
 type twitterClient struct {
 	Client *twitter.Client
+	logger *zap.SugaredLogger
 }
 
-func NewTwitterClientFromEnv() TwitterClient {
+func NewTwitterClientFromEnv(logger *zap.SugaredLogger) TwitterClient {
 	var tc twitterClient
 	consumerKey := os.Getenv("TWITTER_API_KEY")
 	consumerSecret := os.Getenv("TWITTER_API_KEY_SECRET")

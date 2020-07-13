@@ -10,6 +10,20 @@
     "tasks": [
         {
             "type": "twitter"
+        },
+        {
+            "type": "copy",
+            "params": {
+                "copyPath": [
+                    "approved"
+                ]
+            }
+        },
+        {
+            "type": "ethbool"
+        },
+        {
+            "type": "ethtx"
         }
     ]
 }

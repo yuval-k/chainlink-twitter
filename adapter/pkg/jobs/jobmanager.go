@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/yuval-k/chainlink-twitter/adapter/pkg/twitter"
+	"go.uber.org/zap"
 )
 
 const Interval = time.Minute / 2
@@ -23,12 +24,15 @@ type JobManager struct {
 	jobsToAdd chan *Job
 
 	backoffDuration time.Duration
+
+	logger *zap.SugaredLogger
 }
 
-func NewJobManager(twitterClient twitter.TwitterClient) *JobManager {
+func NewJobManager(logger *zap.SugaredLogger, twitterClient twitter.TwitterClient) *JobManager {
 	return &JobManager{
 		TwitterClient: twitterClient,
 		jobsToAdd:     make(chan *Job, 100),
+		logger:        logger,
 	}
 }
 
@@ -42,6 +46,7 @@ func (j *JobManager) Run() {
 		case <-j.backoff():
 			// zbam
 			for job := range j.jobs {
+				j.logger.Infow("unqueueing job and retrying", "job", job)
 				delete(j.jobs, job)
 				j.runJobRatelimited(job)
 				// do it one job at the time, so we also poll the job channel
@@ -51,6 +56,7 @@ func (j *JobManager) Run() {
 			if !ok {
 				return
 			}
+			j.logger.Infow("got new job", "job", job)
 			j.runJobRatelimited(job)
 		}
 	}
@@ -75,8 +81,10 @@ func (j *JobManager) increaseBackoff() {
 }
 
 func (j *JobManager) runJobRatelimited(job *Job) {
+	j.logger.Infow("running job", "job", job)
 	approved, resp, err := j.runJob(job)
 	if err == nil {
+		j.logger.Infow("running job success!", "approved", approved)
 		j.resetBackoff()
 		job.Callback(true, approved, nil)
 	}
@@ -85,11 +93,16 @@ func (j *JobManager) runJobRatelimited(job *Job) {
 	// error is anything but rate limit, respond with error.
 	if resp != nil && resp.StatusCode != http.StatusTooManyRequests {
 		j.resetBackoff()
+		j.logger.Infow("running job error!", "err", err, "statuscode", resp.StatusCode)
 		job.Callback(false, false, err)
 	}
+	j.logger.Infow("running job recoverable error", "err", err, "statuscode", resp.StatusCode)
+
 	// if we are here we are either rate limited, or some connection error happened.
 	// either way, do exp back-off
 	// save the map
+
+	j.logger.Infow("queueing job", "job", job)
 	j.jobs[job] = struct{}{}
 	j.increaseBackoff()
 }
