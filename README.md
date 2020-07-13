@@ -71,6 +71,8 @@ make deploy-node
 
 # wait for node:
 kubectl rollout status deploy/chainlink
+# watch logs to see when it is really alive:
+kubectl logs deploy/chainlink -f
 
 # This may take a while, so if NODE_ADDR is empty, sleep might help. if this comes empty, try again after a minute or so.
 export NODE_ADDR=$(kubectl logs deploy/chainlink|grep "please deposit ETH into your address:"| tr ' ' '\n'|grep 0x)
@@ -85,7 +87,7 @@ geth attach http://localhost:32000 -exec 'eth.sendTransaction({from: "'${ADDRESS
 geth attach http://localhost:32000 --jspath ./scripts -exec 'loadScript("fund.js");transfer("'$LINK_TOKEN'", "'$ADDRESS'", "'$NODE_ADDR'");'
 
 # to verify (optional), check node balance:
-geth attach http://localhost:32000 --jspath ./scripts -exec 'loadScript("fund.js");getbalance("'$LINK_TOKEN'", "'$NODE_ADDR'");'
+geth attach http://localhost:32000 --jspath ./scripts -exec 'loadScript("fund.js");getbalance("'$LINK_TOKEN'", "'$ADDRESS'", "'$NODE_ADDR'");'
 ```
 
 Deploy oracle:
@@ -184,7 +186,7 @@ Have your twitter secrets setup as environment variables:
 - TWITTER_ACCESS_TOKEN
 - TWITTER_ACCESS_TOKEN_SECRET
 
-Now we can deploy the node:
+Now we can deploy the adapter:
 ```bash
 kubectl create secret generic twitter-adapter \
     --from-literal=TWITTER_API_KEY=$TWITTER_API_KEY \
@@ -193,14 +195,14 @@ kubectl create secret generic twitter-adapter \
     --from-literal=TWITTER_ACCESS_TOKEN_SECRET=$TWITTER_ACCESS_TOKEN_SECRET \
     --from-literal=INCOMING_TOKEN=$INCOMING_TOKEN \
     --from-literal=OUTGOING_TOKEN=$OUTGOING_TOKEN
-make deploy-adapter 
+make deploy-adapter
 ```
 
 add the twitter job spec:
 
 ```bash
 sed -e "s/ORACLE_ADDR/$ORACLE_ADDR/" adapter/jobspec.json > jobspec.json
-TWITTER_JOB_ID=$(curl -b cookiefile http://localhost:6688/v2/specs -XPOST -H"X-API-KEY: $ACCESS_KEY" -H"X-API-SECRET: $SECRET_KEY" -H"content-type: application/json" -d @jobspec.json | jq .data.id -r)
+export TWITTER_JOB_ID=$(curl -b cookiefile http://localhost:6688/v2/specs -XPOST -H"X-API-KEY: $ACCESS_KEY" -H"X-API-SECRET: $SECRET_KEY" -H"content-type: application/json" -d @jobspec.json | jq .data.id -r)
 rm jobspec.json
 ```
 
@@ -240,6 +242,16 @@ once real world transaction happens, request approval:
 # request approval
 node scripts/twitterconsumer/requestApproval.js $DEPLOYED_TC_ADDR 
 ```
+
+make some noise on the network so that the transaction is confirmed. move some eth between ganache addresses 8,9
+```bash
+geth attach http://localhost:32000 -exec 'eth.sendTransaction({from: "0xACa94ef8bD5ffEE41947b4585a84BdA5a3d3DA6E",to: "0x1dF62f291b2E969fB0849d99D9Ce41e2F137006e", value: "10000000000000000000"})'
+geth attach http://localhost:32000 -exec 'eth.sendTransaction({from: "0x1dF62f291b2E969fB0849d99D9Ce41e2F137006e",to: "0xACa94ef8bD5ffEE41947b4585a84BdA5a3d3DA6E", value: "10000000000000000000"})'
+geth attach http://localhost:32000 -exec 'eth.sendTransaction({from: "0xACa94ef8bD5ffEE41947b4585a84BdA5a3d3DA6E",to: "0x1dF62f291b2E969fB0849d99D9Ce41e2F137006e", value: "10000000000000000000"})'
+geth attach http://localhost:32000 -exec 'eth.sendTransaction({from: "0x1dF62f291b2E969fB0849d99D9Ce41e2F137006e",to: "0xACa94ef8bD5ffEE41947b4585a84BdA5a3d3DA6E", value: "10000000000000000000"})'
+```
+
+
 Now go and tweet your approval message.
 Once approval is done, withdraw!
 ```bash

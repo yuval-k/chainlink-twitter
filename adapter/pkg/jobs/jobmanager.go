@@ -31,6 +31,7 @@ type JobManager struct {
 func NewJobManager(logger *zap.SugaredLogger, twitterClient twitter.TwitterClient) *JobManager {
 	return &JobManager{
 		TwitterClient: twitterClient,
+		jobs:          make(map[*Job]struct{}),
 		jobsToAdd:     make(chan *Job, 100),
 		logger:        logger,
 	}
@@ -87,6 +88,7 @@ func (j *JobManager) runJobRatelimited(job *Job) {
 		j.logger.Infow("running job success!", "approved", approved)
 		j.resetBackoff()
 		job.Callback(true, approved, nil)
+		return
 	}
 
 	// if resp is nil, it might be a connection error, so let's retry.
@@ -95,8 +97,13 @@ func (j *JobManager) runJobRatelimited(job *Job) {
 		j.resetBackoff()
 		j.logger.Infow("running job error!", "err", err, "statuscode", resp.StatusCode)
 		job.Callback(false, false, err)
+		return
 	}
-	j.logger.Infow("running job recoverable error", "err", err, "statuscode", resp.StatusCode)
+	statusCode := 0
+	if resp != nil {
+		statusCode = resp.StatusCode
+	}
+	j.logger.Infow("running job recoverable error", "err", err, "statuscode", statusCode)
 
 	// if we are here we are either rate limited, or some connection error happened.
 	// either way, do exp back-off

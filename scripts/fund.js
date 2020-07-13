@@ -6,7 +6,7 @@ function transfer(linkToken, linkOwner, nodeaddr) {
     return linkContract.transfer(nodeaddr, 10*1000000000000000000, {from:linkOwner});
 }
 
-function getbalance(linkToken, addr) {
+function getbalance(linkToken, linkOwner, addr) {
     var linkContract = web3.eth.contract(erc20).at(linkToken);
     return linkContract.balanceOf(addr, {from:linkOwner});
 }

@@ -1,6 +1,6 @@
 node_modules
 **/build
-node-tmp.txt
+*.txt
 cookiefile
 authtokens
 bridge_create.json
