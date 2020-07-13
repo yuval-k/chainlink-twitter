@@ -29,7 +29,7 @@ The flow is as follows:
 1. Assuming the transaction as approved, the beneficiary can now call withdraw to receive the funds.
 1. If the contract expires and no approval was given, the originator can refund the contract.
  */
-contract TwitterConsumer is ChainlinkClient, Ownable {
+contract TwitterConsumer is ChainlinkClient {
     uint256 private constant ORACLE_PAYMENT = 1 * LINK;
 
     address public /* payable */ originator;
@@ -82,10 +82,8 @@ contract TwitterConsumer is ChainlinkClient, Ownable {
 
     function fund() public onlyOriginator payable {
         require(!done, "Contract is done");
-        require(amount == 0, "Contract already fudned");
         // checking exact amount to prevent mistakes
-        require(msg.value == amount, "Not the amount agreed upon");
-        require(now <= deadline, "Deadline expired");
+        require(msg.value >= amount, "Not the amount agreed upon");
         emit Funded(msg.value);
     }
 
@@ -94,13 +92,14 @@ contract TwitterConsumer is ChainlinkClient, Ownable {
       // but let's use >= to cover the case of transfers we cannot prevent.
         LinkTokenInterface link = LinkTokenInterface(chainlinkTokenAddress());
         return
-            (link.balanceOf(address(this)) >= ORACLE_PAYMENT) && (address(this).balance >= amount);
+            (link.balanceOf(address(this)) >= ORACLE_PAYMENT) && (getEthBalance() >= amount);
     }
 
     function requestApproval()
         public
     {
         require(!done, "Contract is done");
+        require(ready());
         Chainlink.Request memory req = buildChainlinkRequest(
             stringToBytes32(jobId),
             this,
@@ -142,6 +141,13 @@ contract TwitterConsumer is ChainlinkClient, Ownable {
 
     function getChainlinkToken() public view returns (address) {
         return chainlinkTokenAddress();
+    }
+    function getEthBalance() public view returns (uint256) {
+        return address(this).balance;
+    }
+    function getLinkBalance() public view returns (uint256) {
+        LinkTokenInterface link = LinkTokenInterface(chainlinkTokenAddress());
+        return link.balanceOf(address(this));
     }
 
     function withdrawLink() public onlyOriginator {

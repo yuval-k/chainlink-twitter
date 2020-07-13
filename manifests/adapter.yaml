@@ -14,6 +14,7 @@ spec:
       containers:
       - name: twitter-adapter
         image: yuval.dev/twitter-adapter
+        imagePullPolicy: Never
         env:
         - name: CHAINLINK_NODE
           value: http://chainlink:6688
