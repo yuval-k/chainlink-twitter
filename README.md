@@ -234,3 +234,18 @@ node scripts/twitterconsumer/fund.js $DEPLOYED_TC_ADDR 1000000000000000000
 # check if the contracts is ready (i.e. funded with link and ETH)
 node scripts/twitterconsumer/ready.js $DEPLOYED_TC_ADDR 
 ```
+
+once real world transaction happens, request approval:
+```bash
+# request approval
+node scripts/twitterconsumer/requestApproval.js $DEPLOYED_TC_ADDR 
+```
+Now go and tweet your approval message.
+Once approval is done, withdraw!
+```bash
+# withdraw the funds!
+node scripts/twitterconsumer/withdraw.js $DEPLOYED_TC_ADDR 0xFFcf8FDEE72ac11b5c542428B35EEF5769C409f0
+
+# check ETH balance:
+geth attach http://localhost:32000 -exec 'eth.getBalance("0xFFcf8FDEE72ac11b5c542428B35EEF5769C409f0")'
+```
