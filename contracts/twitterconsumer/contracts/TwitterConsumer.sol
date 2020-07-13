@@ -116,7 +116,7 @@ contract TwitterConsumer is ChainlinkClient, Ownable {
         public
         recordChainlinkFulfillment(_requestId)
     {
-        if (!done) {
+        if (!_done) {
           return;
         }
         done = true;

@@ -1,10 +1,10 @@
-.PHONY: build-docker
-build-docker:
-	docker build -t ganache-cli ./docker -f docker/Dockerfile.ganache-cli
+.PHONY: build-ganache-docker
+build-ganache-docker:
+	docker build -t yuval.dev/ganache-cli ./docker -f docker/Dockerfile.ganache-cli
 
-.PHONY: load-docker
-load-docker: build-docker
-	kind load docker-image ganache-cli
+.PHONY: load-ganache-docker
+load-ganache-docker: build-ganache-docker
+	kind load docker-image yuval.dev/ganache-cli
 
 .PHONY: kind-start
 kind-start:
@@ -17,10 +17,22 @@ deploy-token:
 	cd LinkToken && yarn install && yarn migrate-ganache
 
 .PHONY: deploy-testnet
-deploy-testnet: kind-start load-docker
+deploy-testnet: kind-start load-ganache-docker
 	kubectl apply -f manifests/testnet.yaml
 
 .PHONY: deploy-node
 deploy-node: 
 	kubectl apply -f manifests/postgresql.yaml
 	kubectl apply -f manifests/chainlink.yaml
+
+.PHONY: build-adapter-docker
+build-adapter-docker:
+	docker build -t yuval.dev/twitter-adapter ./adapter
+
+.PHONY: load-adapter-docker
+load-adapter-docker: build-adapter-docker
+	kind load docker-image yuval.dev/twitter-adapter
+
+.PHONY: deploy-adapter
+deploy-adapter: load-adapter-docker
+	kubectl apply -f manifests/adapter.yaml

@@ -106,3 +106,15 @@ spec:
       restartPolicy: Never
   backoffLimit: 4
 
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chainlink
+spec:
+  type: ClusterIP
+  selector:
+    app: chainlink
+  ports:
+  - port: 6688
+    targetPort: 6688

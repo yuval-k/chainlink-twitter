@@ -1,1 +1,1 @@
-{"name":"twitter","url":"http://localhost:3000/pending"}
+{"name":"twitter","url":"http://twitter-adapter:8080/pending"}

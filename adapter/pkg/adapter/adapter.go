@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"time"
 
 	"github.com/smartcontractkit/chainlink/core/store/models"
 	"github.com/smartcontractkit/chainlink/core/utils"
@@ -29,7 +28,8 @@ type BridgeInput struct {
 }
 
 type BridgeOutputData struct {
-	Success bool `json:"success`
+	Done     bool `json:"done"`
+	Approved bool `json:"approved"`
 }
 
 type Bridge struct {
@@ -42,7 +42,7 @@ type Bridge struct {
 	jobManager chan<- *jobs.Job
 }
 
-func NewFromEnv() *Bridge {
+func NewFromEnv(jobManager chan<- *jobs.Job) *Bridge {
 	// http://host:port
 	node := os.Getenv("CHAINLINK_NODE")
 	nodeurl, err := url.Parse(node)
@@ -53,6 +53,7 @@ func NewFromEnv() *Bridge {
 		fromChainlinkToken: os.Getenv("OUTGOING_TOKEN"),
 		nodeAddress:        nodeurl,
 		toChainlinkToken:   os.Getenv("INCOMING_TOKEN"),
+		jobManager:         jobManager,
 	}
 }
 
@@ -83,7 +84,8 @@ func (b *Bridge) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 }
 
 func (b *Bridge) Run(input *BridgeInput) (*models.BridgeRunResult, error) {
-	// place the job in the background and return pending
+	// might need to do retries, so return the job as pending,
+	// and move to processing that will handler that
 
 	respUrl := input.ResponseURL
 	if respUrl == "" {
@@ -95,29 +97,33 @@ func (b *Bridge) Run(input *BridgeInput) (*models.BridgeRunResult, error) {
 	job := &jobs.Job{
 		Handle: input.Data.Handle,
 		Text:   input.Data.Text,
-		// lots of time!
-		NotAfter: time.Now().Add(time.Hour * 10000),
-		Callback: func(success bool) {
-			var bod BridgeOutputData
-			bod.Success = success
-
+		Callback: func(done, approved bool, err error) {
 			var brr models.BridgeRunResult
-			brr.Status = models.RunStatusCompleted
-
-			jsn, err := json.Marshal(&bod)
 			if err != nil {
-				// TODO: log instead of panic
-				panic(err)
+				brr.Status = models.RunStatusErrored
+			} else {
+				var bod BridgeOutputData
+				bod.Done = done
+				bod.Approved = approved
+
+				brr.Status = models.RunStatusCompleted
+
+				jsn, err := json.Marshal(&bod)
+				if err != nil {
+					// TODO: log instead of panic
+					panic(err)
+				}
+				brr.Data.UnmarshalJSON(jsn)
 			}
-			brr.Data.UnmarshalJSON(jsn)
 			err = b.Patch(respUrl, &brr)
 			if err != nil {
-				// TODO: log instead of panic
+				// TODO: do some retries / or log instead of panic
 				panic(err)
 			}
 		},
 	}
 
+	// TODO: should i select here?
 	b.jobManager <- job
 
 	return &models.BridgeRunResult{

@@ -1,6 +1,7 @@
 package twitter
 
 import (
+	"net/http"
 	"os"
 
 	"github.com/dghubble/go-twitter/twitter"
@@ -8,7 +9,7 @@ import (
 )
 
 type TwitterClient interface {
-	GetTweetsFor(user string) ([]string, error)
+	GetTweetsFor(user string) ([]string, *http.Response, error)
 }
 
 type twitterClient struct {
@@ -31,21 +32,21 @@ func NewTwitterClientFromEnv() TwitterClient {
 	return &tc
 }
 
-func (tc *twitterClient) GetTweetsFor(user string) ([]string, error) {
+func (tc *twitterClient) GetTweetsFor(user string) ([]string, *http.Response, error) {
 	t := true
-	tweets, _, err := tc.Client.Timelines.UserTimeline(&twitter.UserTimelineParams{
+	tweets, resp, err := tc.Client.Timelines.UserTimeline(&twitter.UserTimelineParams{
 		ScreenName:     user,
 		Count:          100,
 		ExcludeReplies: &t,
 		TrimUser:       &t,
 	})
 	if err != nil {
-		return nil, err
+		return nil, resp, err
 	}
 
 	var ret []string
 	for _, t := range tweets {
 		ret = append(ret, t.Text)
 	}
-	return ret, nil
+	return ret, resp, nil
 }

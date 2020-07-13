@@ -1,4 +1,4 @@
-module github.com/yuval-k/chainlink-twitter
+module github.com/yuval-k/chainlink-twitter/adapter
 
 go 1.14
 

@@ -45,7 +45,6 @@ Deploy the infrastructure, starting with the ganache and the coin:
 we use ganache in deterministic mode, so ADDRESS and KEY should be the same every time. you can see them in the ganache log output.
 
 ```bash
-make kind-start
 make deploy-testnet
 kubectl rollout status deploy/ganache
 # may need to sleep here to see logs
@@ -113,7 +112,7 @@ curl -b cookiefile http://localhost:6688/v2/user/token -X POST -H 'Content-Type:
 
 export ACCESS_KEY=$(jq '.data.attributes.accessKey' authtokens)
 export SECRET_KEY=$(jq '.data.attributes.secret' authtokens)
-rm authtokens cookie
+rm authtokens cookiefile
 ```
 
 Now we can use the API keys to create the jobs:
@@ -167,3 +166,35 @@ kubectl logs deploy/ganache
 ```
 
 
+# Deploy twitter adapter:
+
+register the node:
+```
+curl -c cookiefile \
+  -d '{"email":"foo@example.com", "password":"apipassword"}' \
+  -X POST -H 'Content-Type: application/json' \
+   http://localhost:6688/sessions
+
+curl -b cookiefile http://localhost:6688/v2/bridge_types -XPOST -H"X-API-KEY: $ACCESS_KEY" -H"X-API-SECRET: $SECRET_KEY" -H"content-type: application/json" -d @adapter/bridge.json > bridge_create.json
+export $INCOMING_TOKEN=$(jq '.data.attributes.incomingToken' bridge_create.json)
+export $OUTGOING_TOKEN=$(jq '.data.attributes.outgoingToken' bridge_create.json)
+rm bridge_create.json
+```
+
+Have your twitter secrets setup as environment variables:
+- TWITTER_API_KEY
+- TWITTER_API_KEY_SECRET
+- TWITTER_ACCESS_TOKEN
+- TWITTER_ACCESS_TOKEN_SECRET
+
+Now we can deploy the node:
+```bash
+kubectl create secret generic twitter-adapter \
+    --from-literal=TWITTER_API_KEY=$TWITTER_API_KEY
+    --from-literal=TWITTER_API_KEY_SECRET=$TWITTER_API_KEY_SECRET
+    --from-literal=TWITTER_ACCESS_TOKEN=$TWITTER_ACCESS_TOKEN
+    --from-literal=TWITTER_ACCESS_TOKEN_SECRET=$TWITTER_ACCESS_TOKEN_SECRET
+    --from-literal=INCOMING_TOKEN=$INCOMING_TOKEN
+    --from-literal=OUTGOING_TOKEN=$OUTGOING_TOKEN
+make deploy-adapter 
+```

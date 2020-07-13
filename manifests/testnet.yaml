@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
       - name: ganache
-        image: ganache-cli
+        image: yuval.dev/ganache-cli
         args:
           - --deterministic
           - --networkId
