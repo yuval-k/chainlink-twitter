@@ -32,8 +32,8 @@ The flow is as follows:
 contract TwitterConsumer is ChainlinkClient, Ownable {
     uint256 private constant ORACLE_PAYMENT = 1 * LINK;
 
-    address payable public originator;
-    address payable public beneficiary;
+    address public /* payable */ originator;
+    address public /* payable */ beneficiary;
     uint256 public deadline;
     uint256 public amount;
 
@@ -62,8 +62,8 @@ contract TwitterConsumer is ChainlinkClient, Ownable {
     constructor(
         address _link,
         uint256 _deadline,
-        address payable _beneficiary,
-        uint256 amount,
+        address /* payable */ _beneficiary,
+        uint256 _amount,
         string _approver_twitter_handle,
         string _text,
         address _oracle,
@@ -80,22 +80,21 @@ contract TwitterConsumer is ChainlinkClient, Ownable {
         jobId = _jobId;
     }
 
-    // this will be called when ETH is sent to the contract automatically.
-    receive() external payable {
-        fund();
-    }
-
     function fund() public onlyOriginator payable {
         require(!done, "Contract is done");
         require(amount == 0, "Contract already fudned");
+        // checking exact amount to prevent mistakes
         require(msg.value == amount, "Not the amount agreed upon");
         require(now <= deadline, "Deadline expired");
         emit Funded(msg.value);
     }
 
     function ready() public view returns (bool) {
+      // technically we want balance == amount, as an increased price may be undesired.
+      // but let's use >= to cover the case of transfers we cannot prevent.
+        LinkTokenInterface link = LinkTokenInterface(chainlinkTokenAddress());
         return
-            (link.balanceOf(address(this)) >= ORACLE_PAYMENT) && (balance == amount);
+            (link.balanceOf(address(this)) >= ORACLE_PAYMENT) && (address(this).balance >= amount);
     }
 
     function requestApproval()
@@ -103,13 +102,13 @@ contract TwitterConsumer is ChainlinkClient, Ownable {
     {
         require(!done, "Contract is done");
         Chainlink.Request memory req = buildChainlinkRequest(
-            stringToBytes32(_jobId),
+            stringToBytes32(jobId),
             this,
             this.fulfillApproval.selector
         );
         req.add("handle", handle);
         req.add("text", text);
-        sendChainlinkRequestTo(_oracle, req, ORACLE_PAYMENT);
+        sendChainlinkRequestTo(oracle, req, ORACLE_PAYMENT);
     }
 
     function fulfillApproval(bytes32 _requestId, bool _done, bool _approved)
