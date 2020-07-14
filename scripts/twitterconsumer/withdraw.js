@@ -12,5 +12,6 @@ const web3 = new Web3('http://localhost:32000');
 (async () => {
     console.log("from/to:",beneficiary,"params:", contractaddress)
     var c = new web3.eth.Contract(jsonInterface, contractaddress);
-    await c.methods.withdraw().send({from: beneficiary, gas:3000000});
+    let res = await c.methods.withdraw().send({from: beneficiary, gas:3000000});
+    console.log(res);
 })()
