@@ -106,7 +106,7 @@ port forward to the ui/api/s:
 kubectl port-forward deploy/chainlink 6688&
 ```
 
-Log-in in and get some auth tokens:
+Log-in in to the node:
 ```bash
 curl -c cookiefile \
   -d '{"email":"foo@example.com", "password":"apipassword"}' \
@@ -173,8 +173,8 @@ curl -c cookiefile \
    http://localhost:6688/sessions
 
 curl -b cookiefile http://localhost:6688/v2/bridge_types -XPOST -H"content-type: application/json" -d @adapter/bridge.json > bridge_create.json
-export INCOMING_TOKEN=$(jq '.data.attributes.incomingToken' bridge_create.json)
-export OUTGOING_TOKEN=$(jq '.data.attributes.outgoingToken' bridge_create.json)
+export INCOMING_TOKEN=$(jq '.data.attributes.incomingToken' bridge_create.json -r)
+export OUTGOING_TOKEN=$(jq '.data.attributes.outgoingToken' bridge_create.json -r)
 rm bridge_create.json
 ```
 
@@ -261,3 +261,14 @@ node scripts/twitterconsumer/withdraw.js $DEPLOYED_TC_ADDR 0xFFcf8FDEE72ac11b5c5
 # check ETH balance:
 geth attach http://localhost:32000 -exec 'eth.getBalance("0xFFcf8FDEE72ac11b5c542428B35EEF5769C409f0")'
 ```
+
+faq:
+why use kubernetes? it is good to do as it resembles what will be in prod. 
+with minor tweaks, all this code can be deployed to a live environment.
+
+why marriage - every one can relate to it;
+the goal is to show how we can bridge processes in the blocking to existing approval flows. with the hopes that this will make it more accessible to larger and more established enterprises.
+think approval flow, where you need an email approval from you manager - it follows the same structure.
+
+social media influences:
+agree with an influencer to tweet aobut yoru brand and only pay him after he did
