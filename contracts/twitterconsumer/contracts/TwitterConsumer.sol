@@ -43,9 +43,9 @@ contract TwitterConsumer is ChainlinkClient {
     string public jobId;
 
     // done means that the node returned an answer, and the contract reached it'se final state.
-    bool done;
+    bool public done;
     // approved means that the trusted 3rd party approved the transaction.
-    bool approved;
+    bool public approved;
 
     modifier onlyBeneficiary() {
         require(msg.sender == beneficiary);
@@ -61,7 +61,7 @@ contract TwitterConsumer is ChainlinkClient {
 
     constructor(
         address _link,
-        uint256 _deadline,
+        uint256 _timeout,
         address /* payable */ _beneficiary,
         uint256 _amount,
         string _approver_twitter_handle,
@@ -73,7 +73,7 @@ contract TwitterConsumer is ChainlinkClient {
         originator = msg.sender;
         beneficiary = _beneficiary;
         amount = _amount;
-        deadline = now + _deadline;
+        deadline = now + _timeout;
         handle = _approver_twitter_handle;
         text = _text;
         oracle = _oracle;
@@ -125,7 +125,7 @@ contract TwitterConsumer is ChainlinkClient {
     function withdraw() public onlyBeneficiary {
         require(done, "Contract is still in progress");
         require(approved == true, "Cannot withdraw an unapproved contract");
-        selfdestruct(beneficiary);
+        beneficiary.transfer(getEthBalance());
     }
 
     function refund() public onlyOriginator {
@@ -136,7 +136,7 @@ contract TwitterConsumer is ChainlinkClient {
             require(done, "Contract is still in progress");
             require(approved == false, "Cannot refund an approved contract");
         }
-        selfdestruct(originator);
+        originator.transfer(getEthBalance());
     }
 
     function getChainlinkToken() public view returns (address) {
@@ -145,12 +145,16 @@ contract TwitterConsumer is ChainlinkClient {
     function getEthBalance() public view returns (uint256) {
         return address(this).balance;
     }
+    function approved() public view returns (bool) {
+        return approved;
+    }
     function getLinkBalance() public view returns (uint256) {
         LinkTokenInterface link = LinkTokenInterface(chainlinkTokenAddress());
         return link.balanceOf(address(this));
     }
 
     function withdrawLink() public onlyOriginator {
+        require(done, "Contract is still in progress");
         LinkTokenInterface link = LinkTokenInterface(chainlinkTokenAddress());
         require(
             link.transfer(msg.sender, link.balanceOf(address(this))),

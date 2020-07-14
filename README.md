@@ -225,7 +225,7 @@ for example:
 ```bash
 npm run build-twitterconsumer
 # deploy contract and get its address
-node scripts/twitterconsumer/deploy.js $LINK_TOKEN 86400 0xFFcf8FDEE72ac11b5c542428B35EEF5769C409f0 1000000000000000000 KohaviYuval Yes $ORACLE_ADDR $TWITTER_JOB_ID | tee output.txt
+node scripts/twitterconsumer/deploy.js $LINK_TOKEN 86400 0xFFcf8FDEE72ac11b5c542428B35EEF5769C409f0 1000000000000000000 KohaviYuval les $ORACLE_ADDR $TWITTER_JOB_ID | tee output.txt
 DEPLOYED_TC_ADDR=$(grep "contract address:" output.txt | cut -d: -f2 | tr -d ' ')
 rm output.txt
 # fund contract with link for the oracle
@@ -253,11 +253,12 @@ geth attach http://localhost:32000 -exec 'eth.sendTransaction({from: "0xACa94ef8
 geth attach http://localhost:32000 -exec 'eth.sendTransaction({from: "0x1dF62f291b2E969fB0849d99D9Ce41e2F137006e",to: "0xACa94ef8bD5ffEE41947b4585a84BdA5a3d3DA6E", value: "10000000000000000000"})'
 ```
 
-
 Once approval is done, you may need to make some more network noise for confirmation.
 now you can withdraw!
 ```bash
 # withdraw the funds!
+node scripts/twitterconsumer/isapproved.js $DEPLOYED_TC_ADDR
+
 node scripts/twitterconsumer/withdraw.js $DEPLOYED_TC_ADDR 0xFFcf8FDEE72ac11b5c542428B35EEF5769C409f0
 
 # check ETH balance:
