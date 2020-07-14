@@ -273,4 +273,4 @@ the goal is to show how we can bridge processes in the blocking to existing appr
 think approval flow, where you need an email approval from you manager - it follows the same structure.
 
 social media influences:
-agree with an influencer to tweet aobut yoru brand and only pay him after he did
+agree with an influencer to tweet about your brand and only pay him after he did
