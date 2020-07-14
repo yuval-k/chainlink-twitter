@@ -6,7 +6,7 @@ import "../../vendor/v0.4/vendor/Ownable.sol";
 
 /**
 The goal of this contract is to allow allow the transfer of ETH from the originator to the
-beneficiary for real world sevices. To make sure all goes well, the funds will only transfer after
+beneficiary for real world services. To make sure all goes well, the funds will only transfer after
 a trusted 3rd party approves it.
 The trusted 3rd party is identified by his twitter handle. and he approves the transaction by 
 tweeting the approval text.
@@ -25,8 +25,8 @@ The flow is as follows:
 1. Now that the contract is ready, the real world transaction can happen
 1. Trusted 3rd party tweets the approval text.
 1. Someone (originator or beneficiary) calls `requestApproval()`
-1. Chainlink magic happens, during which the node uses twitter API to see if the approval text as tweeted.
-1. Assuming the transaction as approved, the beneficiary can now call withdraw to receive the funds.
+1. Chainlink magic happens, during which the node uses twitter API to see if the approval text was tweeted.
+1. Assuming the transaction was approved, the beneficiary can now call withdraw to receive the funds.
 1. If the contract expires and no approval was given, the originator can refund the contract.
  */
 contract TwitterConsumer is ChainlinkClient {
@@ -99,7 +99,7 @@ contract TwitterConsumer is ChainlinkClient {
         public
     {
         require(!done, "Contract is done");
-        require(ready());
+        require(ready(), "Contract is not ready for approval");
         Chainlink.Request memory req = buildChainlinkRequest(
             stringToBytes32(jobId),
             this,
@@ -124,19 +124,17 @@ contract TwitterConsumer is ChainlinkClient {
 
     function withdraw() public onlyBeneficiary {
         require(done, "Contract is still in progress");
-        require(approved == true, "Cannot withdraw an unapproved contract");
+        require(approved, "Cannot withdraw an unapproved contract");
         beneficiary.transfer(getEthBalance());
+        // TODO: emit event?
     }
 
     function refund() public onlyOriginator {
-        if (!done && now > deadline) {
-            done = true;
-            // we have reached deadline, allow refund.
-        } else {
-            require(done, "Contract is still in progress");
-            require(approved == false, "Cannot refund an approved contract");
-        }
+        require(done || (now > deadline), "Contract is still in progress");
+        require(!approved, "Cannot refund an approved contract");
+        done = true; // set done to true in-case we are passed the dealine
         originator.transfer(getEthBalance());
+        // TODO: emit event?
     }
 
     function getChainlinkToken() public view returns (address) {
