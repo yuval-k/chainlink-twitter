@@ -50,7 +50,7 @@ kubectl rollout status deploy/ganache
 # may need to sleep here to see logs
 # the created addresses will be in the log.
 kubectl logs deploy/ganache
-# may need to sleep here untill ganache initializes
+# may need to sleep here until ganache initializes
 make deploy-token
 ```
 
@@ -71,7 +71,8 @@ make deploy-node
 
 # wait for node:
 kubectl rollout status deploy/chainlink
-# watch logs to see when it is really alive:
+# watch logs to see when it is really alive. It may crash a couple of times while db initializes..
+# just let it to it's thing for a few minutes
 kubectl logs deploy/chainlink -f
 
 # This may take a while, so if NODE_ADDR is empty, sleep might help. if this comes empty, try again after a minute or so.
@@ -202,7 +203,7 @@ add the twitter job spec:
 
 ```bash
 sed -e "s/ORACLE_ADDR/$ORACLE_ADDR/" adapter/jobspec.json > jobspec.json
-export TWITTER_JOB_ID=$(curl -b cookiefile http://localhost:6688/v2/specs -XPOST -H"X-API-KEY: $ACCESS_KEY" -H"X-API-SECRET: $SECRET_KEY" -H"content-type: application/json" -d @jobspec.json | jq .data.id -r)
+export TWITTER_JOB_ID=$(curl -b cookiefile http://localhost:6688/v2/specs -XPOST -H"content-type: application/json" -d @jobspec.json | jq .data.id -r)
 rm jobspec.json
 ```
 
@@ -237,6 +238,7 @@ node scripts/twitterconsumer/fund.js $DEPLOYED_TC_ADDR 1000000000000000000
 node scripts/twitterconsumer/ready.js $DEPLOYED_TC_ADDR 
 ```
 
+Now go and tweet your approval message.
 once real world transaction happens, request approval:
 ```bash
 # request approval
@@ -252,8 +254,8 @@ geth attach http://localhost:32000 -exec 'eth.sendTransaction({from: "0x1dF62f29
 ```
 
 
-Now go and tweet your approval message.
-Once approval is done, withdraw!
+Once approval is done, you may need to make some more network noise for confirmation.
+now you can withdraw!
 ```bash
 # withdraw the funds!
 node scripts/twitterconsumer/withdraw.js $DEPLOYED_TC_ADDR 0xFFcf8FDEE72ac11b5c542428B35EEF5769C409f0
