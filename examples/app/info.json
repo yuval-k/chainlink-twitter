@@ -1,0 +1,45 @@
+
+
+[
+    {
+      "name": "Ethereum Mainnet",
+      "chainId": 1,
+      "shortName": "eth",
+      "chain": "ETH",
+      "network": "mainnet",
+      "networkId": 1,
+      "nativeCurrency": {"name":"Ether","symbol":"ETH","decimals":18},
+      "rpc": ["https://mainnet.infura.io/v3/${INFURA_API_KEY}","https://api.mycryptoapi.com/eth"],
+      "faucets": [],
+      "infoURL": "https://ethereum.org",
+      "LINK":"0x514910771AF9Ca656af840dff83E8264EcF986CA"
+    },
+    {
+        "name": "Ethereum Testnet Ropsten",
+        "chainId": 3,
+        "shortName": "rop",
+        "chain": "ETH",
+        "network": "ropsten",
+        "networkId": 3,
+        "nativeCurrency": {"name":"Ropsten Ether","symbol":"ROP","decimals":18},
+        "rpc": ["https://ropsten.infura.io/v3/${INFURA_API_KEY}"],
+        "faucets": ["https://faucet.ropsten.be?${ADDRESS}"],
+        "infoURL": "https://github.com/ethereum/ropsten",
+        "LINK":"0x20fE562d797A42Dcb3399062AE9546cd06f63280"
+    },
+    
+    {
+        "name": "Ganache local test network",
+        "chainId": 1337,
+        "shortName": "rop",
+        "chain": "ETH",
+        "network": "ganache",
+        "networkId": 1337,
+        "nativeCurrency": {"name":"Ropsten Ether","symbol":"ROP","decimals":18},
+        "rpc": ["https://ropsten.infura.io/v3/${INFURA_API_KEY}"],
+        "faucets": [],
+        "infoURL": "https://github.com/ethereum/ropsten",
+        "LINK":"0x5b1869d9a4c187f2eaa108f3062412ecf0526b24"
+    }
+    
+]

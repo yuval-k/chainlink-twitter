@@ -29,6 +29,9 @@ spec:
           limits:
             memory: "128Mi"
             cpu: "500m"
+        readinessProbe:
+          tcpSocket:
+            port: 8545
         ports:
         - containerPort: 8545
 ---

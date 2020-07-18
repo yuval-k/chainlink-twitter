@@ -52,7 +52,11 @@ spec:
             value: "*"
           - name: DATABASE_URL
             value: postgresql://postgres:aBHBQ37PkR@release-postgresql:5432/chainlink?sslmode=disable
-
+        readinessProbe:
+          httpGet:
+            path: /
+            scheme: HTTP
+            port: 6688
         resources:
           requests:
             memory: "32Mi"
@@ -85,6 +89,7 @@ kind: Job
 metadata:
   name: createdb
 spec:
+  ttlSecondsAfterFinished: 10
   template:
     spec:
       containers:

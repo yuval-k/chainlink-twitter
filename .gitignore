@@ -4,3 +4,4 @@ node_modules
 cookiefile
 authtokens
 bridge_create.json
+public/build/

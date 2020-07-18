@@ -47,6 +47,7 @@ We'll start by setting up an automated demo environment, that allows to this thi
 Go go through the demo steps detailed below, you will need:
 - node (tested with nodejs 10)
 - npm
+- yarn (deploy LinkToken)
 - kind (kuberentes in docker)
 - kubectl
 - make
@@ -85,8 +86,8 @@ We use ganache in deterministic mode, so ADDRESS and KEY should be the same ever
 make deploy-testnet
 kubectl rollout status deploy/ganache
 # may need to sleep here to see logs
-# the created addresses will be in the log.
-kubectl logs deploy/ganache
+# the created addresses will be in the log:
+#    kubectl logs deploy/ganache
 # may need to re-try / sleep here until ganache initializes
 make deploy-token
 ```
@@ -110,15 +111,15 @@ export LINK_TOKEN=0x5b1869d9a4c187f2eaa108f3062412ecf0526b24
 # Deploy the chainlink node into kind.
 make deploy-node
 
-# Wait for node:
+# Wait for node to become ready:
 kubectl rollout status deploy/chainlink
 
 # Watch logs to see when it is really alive. It may crash a couple of times while db initializes..
 # just let it to it's thing for a few minutes
-kubectl logs deploy/chainlink -f
+#     kubectl logs deploy/chainlink -f
 
-# This may take a while, so if NODE_ADDR is empty, sleep might help. If this comes empty, try again
-# after a minute or so.
+# This may take a while, so if NODE_ADDR is empty, sleep might help.
+
 export NODE_ADDR=$(kubectl logs deploy/chainlink|grep "please deposit ETH into your address:"| tr ' ' '\n'|grep 0x)
 ```
 
@@ -146,7 +147,7 @@ export ORACLE_ADDR=$(grep "contract-address" node-tmp.txt | cut -f 2)
 rm node-tmp.txt
 ```
 
-## Verify environment - Run the chainlink test consumer
+## Optional - Verify environment - Run the chainlink test consumer
 To verify that our environment is working, we can use the chainlink test consumer. You can also skip
 this step.
 
@@ -183,7 +184,7 @@ JOB_ID=$(curl -b cookiefile http://localhost:6688/v2/specs -XPOST -H"content-typ
 curl -b cookiefile http://localhost:6688/v2/specs -XPOST -H"content-type: application/json" -d '{"initiators":[{"type":"runlog","params":{"address":"'$ORACLE_ADDR'"}}],"tasks":[{"type":"httpget"},{"type":"jsonparse"},{"type":"ethbool"},{"type":"ethtx"}]}'
 ```
 
-### Create the test consumer
+### Create test with the test consumer
 
 ```bash
 npm run deploy-testconsumer | tee node-tmp.txt
@@ -217,7 +218,7 @@ If we skipped the previous step, port forward to the node's ui/api port:
 kubectl port-forward deploy/chainlink 6688&
 ```
 
-Log-in in to the node (do this again, incase the cookie expired):
+Log-in in to the node (do this again, in case the cookie expired):
 ```bash
 curl -c cookiefile \
   -d '{"email":"foo@example.com", "password":"apipassword"}' \
@@ -233,7 +234,7 @@ export OUTGOING_TOKEN=$(jq '.data.attributes.outgoingToken' bridge_create.json -
 rm bridge_create.json
 ```
 
-If needed you can delete the bridge like so: `curl -v -b cookiefile -X DELETE http://localhost:6688/v2/bridge_types/twitter` (mistakes happen)...
+Note: If you made a mistake creating the bridge, you can delete it like so: `curl -v -b cookiefile -X DELETE http://localhost:6688/v2/bridge_types/twitter` (mistakes happen)...
 
 Have your twitter secrets setup as environment variables:
 - TWITTER_API_KEY
@@ -243,6 +244,7 @@ Have your twitter secrets setup as environment variables:
 
 Now we can deploy the adapter:
 ```bash
+# create a kubernetes secret with all our keys
 kubectl create secret generic twitter-adapter \
     --from-literal=TWITTER_API_KEY=$TWITTER_API_KEY \
     --from-literal=TWITTER_API_KEY_SECRET=$TWITTER_API_KEY_SECRET \
@@ -250,13 +252,16 @@ kubectl create secret generic twitter-adapter \
     --from-literal=TWITTER_ACCESS_TOKEN_SECRET=$TWITTER_ACCESS_TOKEN_SECRET \
     --from-literal=INCOMING_TOKEN=$INCOMING_TOKEN \
     --from-literal=OUTGOING_TOKEN=$OUTGOING_TOKEN
+# deploy the external adapter
 make deploy-adapter
 ```
 
 Add the twitter job spec to the node:
 
 ```bash
+# add the current oracle address to the job spec
 sed -e "s/ORACLE_ADDR/$ORACLE_ADDR/" adapter/jobspec.json > jobspec.json
+# add the job to the node, and save the job id.
 export TWITTER_JOB_ID=$(curl -b cookiefile http://localhost:6688/v2/specs -XPOST -H"content-type: application/json" -d @jobspec.json | jq .data.id -r)
 rm jobspec.json
 ```
@@ -292,21 +297,23 @@ rm output.txt
 # fund contract with link for the oracle
 geth attach http://localhost:32000 --jspath ./scripts -exec 'loadScript("fund.js");transfer("'$LINK_TOKEN'", "'$ADDRESS'", "'$DEPLOYED_TC_ADDR'");'
 
-# fund contract with eth for the beneficiary
+# fund contract with ETH for the beneficiary
 node scripts/twitterconsumer/fund.js $DEPLOYED_TC_ADDR 1000000000000000000
 
-# check if the contracts is ready (i.e. funded with link and ETH)
+# check if the contract is ready (i.e. funded with link and ETH)
 node scripts/twitterconsumer/ready.js $DEPLOYED_TC_ADDR 
 ```
 
-Now go and tweet your approval message.
-once real world transaction happens, request approval:
+Now go and tweet your approval message. This is the signal that the contract was fulfilled
+and should be approved.
+
+Once the tweet is out (it needs to be publicly readable), request contract approval:
 ```bash
 # request approval
 node scripts/twitterconsumer/requestApproval.js $DEPLOYED_TC_ADDR 
 ```
 
-make some noise on the network so that the transaction is confirmed. move some eth between ganache addresses 8,9
+As we use a local test network, we'll need to make some noise on the network so that the transaction is confirmed. move some eth between ganache addresses 8,9 (this is not needed when using a public test network).
 ```bash
 make_noise () {
   geth attach http://localhost:32000 -exec 'eth.sendTransaction({from: "0xACa94ef8bD5ffEE41947b4585a84BdA5a3d3DA6E",to: "0x1dF62f291b2E969fB0849d99D9Ce41e2F137006e", value: "10000000000000000000"})'
@@ -316,8 +323,9 @@ make_noise () {
 }
 make_noise
 ```
-Now, tweet the approval text. you should see the job making progress in the chainlink node UI.
-If it's stuck in the outgoing confirmation phase, make some more network noise:
+
+You should see the job making progress in the node UI. If it's stuck in the outgoing
+confirmation phase, make some more network noise:
 ```
 make_noise
 ```
@@ -328,7 +336,7 @@ You can check that the contract is approved:
 node scripts/twitterconsumer/isapproved.js $DEPLOYED_TC_ADDR
 ```
 
-Finally, you can withdraw to the beneficiary address!
+Finally, you can withdraw the ETH from the contract to the beneficiary address!
 ```bash
 # withdraw the funds!
 node scripts/twitterconsumer/withdraw.js $DEPLOYED_TC_ADDR $BENEFICIARY
@@ -336,6 +344,9 @@ node scripts/twitterconsumer/withdraw.js $DEPLOYED_TC_ADDR $BENEFICIARY
 # check ETH balance:
 geth attach http://localhost:32000 -exec 'eth.getBalance("'$BENEFICIARY'")'
 ```
+
+# Demo 2 - Web3 App
+
 
 # FAQ
 
