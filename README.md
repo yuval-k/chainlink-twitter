@@ -66,8 +66,9 @@ To re-generate the db yaml, you will need `helm`. use the following command:
 helm template release bitnami/postgresql > manifests/postgresql.yaml
 ```
 ## Bootstrap
-First, install the npm dependencies with:
+First, install dependencies with:
 ```
+git submodule update --init --recursive
 npm install
 ```
 

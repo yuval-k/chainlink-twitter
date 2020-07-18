@@ -1,4 +1,5 @@
 <script>
+  import "./main.css";
   import linkContractData from "../../LinkToken/build/contracts/LinkToken.json";
   import networkData from "./info.json";
   import Web3 from "web3";
@@ -15,10 +16,14 @@
   let currentNetwork = "<not connected>";
   let currentNetworkName = "<not connected>";
   let currentChain = null;
+  let metamaskStatus = "MetaMask not detected. please install it first";
+  let metamaskInstalled = false;
 
   //let web3 = new Web3('ws://localhost:8546');
   if (typeof window.ethereum !== "undefined") {
     console.log("MetaMask is installed!");
+    metamaskStatus = "MetaMask is installed!";
+    metamaskInstalled = true;
 
     ethereum.autoRefreshOnNetworkChange = false;
     //ethereum.request({ method: 'eth_requestAccounts' });
@@ -47,7 +52,7 @@
     // do something with new account here
   }
 
-  async function showbalances() {
+  export async function showbalances() {
     ethBalance = await web3.eth.getBalance(account);
     let newlinkaddr = "";
     let newnetname = "";
@@ -60,9 +65,9 @@
     } else if (linkAddr != newlinkaddr) {
       linkAddr = newlinkaddr;
       link = new web3.eth.Contract(linkContractData.abi, linkAddr);
-      linkBalance = await link.methods.balanceOf(account).call({ from: account });
-      console.log("linkBalance", linkBalance);
     }  
+    linkBalance = await link.methods.balanceOf(account).call({ from: account });
+    console.log("linkBalance", linkBalance);
   }
 
   function setnetworkdata(){
@@ -135,26 +140,9 @@
 </script>
 
 <style>
-  main {
-    text-align: center;
-    padding: 1em;
-    max-width: 240px;
-    margin: 0 auto;
+  button{
+    @apply rounded-lg bg-gray-300 shadow-lg;
   }
-
-  h1 {
-    color: #ff3e00;
-    text-transform: uppercase;
-    font-size: 4em;
-    font-weight: 100;
-  }
-
-  @media (min-width: 640px) {
-    main {
-      max-width: none;
-    }
-  }
-
   .widget{
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -166,9 +154,10 @@
 </style>
 
 <div class="widget">
-  <button on:click={handleClick} class="twocolums">Option 1: Connect with Metamask</button>
+  <span>{metamaskStatus}</span>
+  <button on:click={handleClick} disabled={!metamaskInstalled}><u>Option 1:</u> Connect with Metamask</button>
   <input type="text" placeholder="provider" bind:value={address} />
-  <button on:click={handleAddress}>Option 2: Connect to a Provider</button>
+  <button on:click={handleAddress}><u>Option 2:</u> Connect to a Provider</button>
   <span>Current Network:</span><span>{currentNetworkName} ({currentNetwork},{currentChain})</span>
   <span>Current Account:</span><span>{account}</span>
   <span>LINK balance</span><span>{linkBalance/1e18}</span>

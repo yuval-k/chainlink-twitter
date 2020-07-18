@@ -176,29 +176,41 @@
 <main>
 
   <h1>Hello {name}!</h1>
+  <section>
+Connect to the blockchain:
   <Web3Connector
     bind:web3
     bind:account
     bind:link={linkcontract}
     bind:linkAddr={link} />
+
+
+  </section>
+<section>
+Interact with the blockchain:
+
+
   <div class="step originator">
     <h2>Deploy new contract</h2>
     In this step we will deploy a new contract, and have the receipent verify that it's terms are agreeable.
+    Please customize the inputs below:
     <input
       type="text"
+      alt="the address of the LINK ERC20 coin"
       placeholder="link"
       bind:value={link}
       class="has-default" />
     <input
       type="text"
+      alt="the number of seconds until the contract expires"
       placeholder="deadline"
       bind:value={deadline}
       class="has-default" />
-    <input type="text" required="required" placeholder="originator" bind:value={account} />
-    <input type="text" required="required" placeholder="beneficiary" bind:value={beneficiary} />
-    <input type="number" min="1" required="required" placeholder="amount" bind:value={amount} />
-    <input type="text" required="required" placeholder="handle" bind:value={handle} />
-    <input type="text" required="required" placeholder="text" bind:value={text} />
+    <input type="text" alt="the address of the originator; i.e. the person paying" required="required" placeholder="originator" bind:value={account} />
+    <input type="text" alt="the address of the beneficiary; i.e. the person receiving the funds" required="required" placeholder="beneficiary" bind:value={beneficiary} />
+    <input type="number" alt="the amount of ETH the originator will pay" min="1" required="required" placeholder="amount" bind:value={amount} />
+    <input type="text" alt="the twitter handle of a trusted third party, that will verify the transaction" required="required" placeholder="handle" bind:value={handle} />
+    <input type="text" alt="the text that needs to be tweeted, so the transaction would be approved" required="required" placeholder="text" bind:value={text} />
     <input
       type="text"
       required="required"
@@ -214,12 +226,12 @@
 
     <button class="step-action" on:click={deploy}>Deploy</button>
     {#if deployedContractAddress}
-      <span>deployed contract address: {deployedContractAddress}</span>
+      <span>Deployed contract address: {deployedContractAddress}</span>
     {/if}
   </div>
   <div class="step originator">
     <h2>Fund</h2>
-    Once the terms are agreed upon, the contract should be funded with ETH(for the beneficiary) and LINK
+    Once the terms are agreed upon, the contract should be funded with ETH (for the beneficiary) and LINK
     (for the oracle).
     <input
       type="text"
@@ -287,7 +299,7 @@
   </div>
 
   <div class="step beneficiary">
-    <h2>check approval</h2>
+    <h2>Verify Approval</h2>
     Check that the contract is approved - the oracle did its job!
     <input
       type="text"
@@ -298,7 +310,7 @@
   </div>
 
   <div class="step beneficiary">
-    <h2>withdraw</h2>
+    <h2>Withdraw</h2>
     The transaction is complete - the beneficiary can now width the funds!
     <input type="text" placeholder="beneficiary" bind:value={beneficiary} />
     <input
@@ -308,5 +320,5 @@
       class="has-default" />
     <button class="step-action" on:click={withdraw}>Withdraw</button>
   </div>
-
+</section>
 </main>
