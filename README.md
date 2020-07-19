@@ -14,17 +14,18 @@ If the contract is not approved within the given time-frame, the contract allows
 the originator to get a refund.
 
 As the approval is a off-chain real world event, we need a way to see that approval was indeed given.
-That's where Twitter comes in! We consider a contract approved, if a specific twitter handle tweets
+That's where Twitter comes in! We consider a contract approved, if a specified twitter handle (representing the trusted 3rd party) tweets
 a specific phrase (a.k.a approval text) provided to the contract at its creation.
 
 A custom chainlink adapter checks twitter and approves the contract.
+Once the contract is approved, the beneficiary can withdraw the funds.
 
 # Use cases
 One example use case is hiring a social media influencer to promote your brand. Using this solution, the a brand that wants twitter exposure (the originator),
 create a contract with the influencer's (the beneficiary) ETH address, twitter handle and the text that should be twitter. 
 As soon as the influencer tweets the agreed text, he will be able to withdraw the funds automatically from the contract.
 
-Another use-case that comes to mind as a future expantion of this project, is corporate approval flows:
+Another use-case that comes to mind as a future expansion for this project, is corporate approval flows:
 A person in the company contracts a vendor, but the transaction needs a CEO approval. The CEO can approve the contract via email to a special email address, that a chainlink adapter will listen on. (this would require writing an email adapter in addition to a twitter adapter)
 
 # How it works?
