@@ -1,3 +1,4 @@
+#!/bin/bash -e
 
 make deploy-testnet
 kubectl rollout status deploy/ganache

@@ -1,10 +1,16 @@
-# What is going on?
+# Problem
+The goal of this project is to allow off chain service between two people to take place, and result with on-chain payment of ETH.
 
-The goal of this project is to allow allow the transfer of ETH from one person (the originator) to 
-another person (the beneficiary) for real world services. To ensure that funds will only be moved
-once the transaction is complete, we use a 3rd party that both originator and beneficiary trust.
+We'll call the person requesting the service the "originator" and the person providing the service and receiving the funds the "beneficiary".
+
+The question is, how do we guarantee that an off-chain service has been performed?
+
+# Solution
+To ensure that funds will only be moved
+once the transaction is complete and the service was performed, we use a trusted 3rd party that both originator and beneficiary trust.
 Only once the trusted 3rd party approves the contract, the contract will allow withdrawing the funds 
-to the beneficiary. If the contract is not approved within the given time-frame, the contract allows
+to the beneficiary. 
+If the contract is not approved within the given time-frame, the contract allows
 the originator to get a refund.
 
 As the approval is a off-chain real world event, we need a way to see that approval was indeed given.
@@ -13,6 +19,15 @@ a specific phrase (a.k.a approval text) provided to the contract at its creation
 
 A custom chainlink adapter checks twitter and approves the contract.
 
+# Use cases
+One example use case is hiring a social media influencer to promote your brand. Using this solution, the a brand that wants twitter exposure (the originator),
+create a contract with the influencer's (the beneficiary) ETH address, twitter handle and the text that should be twitter. 
+As soon as the influencer tweets the agreed text, he will be able to withdraw the funds automatically from the contract.
+
+Another use-case that comes to mind as a future expantion of this project, is corporate approval flows:
+A person in the company contracts a vendor, but the transaction needs a CEO approval. The CEO can approve the contract via email to a special email address, that a chainlink adapter will listen on. (this would require writing an email adapter in addition to a twitter adapter)
+
+# How it works?
 The flow is as follows:
 1. The originator creates the contract. Both parties can see terms of the contract: 
    - The identity (twitter handle) of the approver, and the approval text.
@@ -37,320 +52,25 @@ adapter - the adapter that confirms a contract in response to a tweet mentioning
 contracts - solidity contracts for oracle and consumers are here.
 docker - docker files for 3rd party program that are not available in docker hub. i.e. ganache-cli.
 LinkToken - git submodule to https://github.com/smartcontractkit/LinkToken. Used to deploy the Link token to our local test chain.
+examples - The UI code to for the UI demo.
 manifests - kubernetes manifests to install everything automatically.
-scripts - Helper web3 JS scripts used in this readme to perform operations on the blockchain without the Remix GUI.
+scripts - Helper web3 JS scripts used in this readme/demos to perform operations on the blockchain.
 ```
 
-# Prerequisites for demo scripts
-We'll start by setting up an automated demo environment, that allows to this this project in a pre re-producible way.
+# Demo
 
-Go go through the demo steps detailed below, you will need:
-- node (tested with nodejs 10)
-- npm
-- yarn (deploy LinkToken)
-- kind (kuberentes in docker)
-- kubectl
-- make
-- docker
-- jq
-- curl
-- geth (used for scripting)
+We have two demos in this repo, a UI one, and a command line one.
+Both require some setup. see the [setup](./docs/setup_local_testnet.md) for more info. there's a convience [setup.sh](./setup.sh) script that you can just run (assuming you have all the command line tools in place).
 
-You will also need twitter API keys (you can open a twitter developer account to get these. the free
-one works fine).
-
-## Optional: 
-For adapter development, you will need `go`.
-To re-generate the db yaml, you will need `helm`. use the following command:
-```
-helm template release bitnami/postgresql > manifests/postgresql.yaml
-```
-## Bootstrap
-First, install dependencies with:
-```
-git submodule update --init --recursive
-npm install
-```
-
-We'll start by creating a local setup in kubernetes. To keep things simple, we will use KinD to 
-setup everything on our laptop. Kubernetes is used so we can replicate the setup fast in a
-reproducible fashion. This can also potentially run in CI systems.
-
-# Demo Environment Setup
-
-## Deploy a local test network
-
-In this step, we will deploy the a local block chain with ganache, and deploy the Link coin to it.
-We use ganache in deterministic mode, so ADDRESS and KEY should be the same every time. you can see them in the ganache log output.
-
-```bash
-make deploy-testnet
-kubectl rollout status deploy/ganache
-# may need to sleep here to see logs
-# the created addresses will be in the log:
-#    kubectl logs deploy/ganache
-# may need to re-try / sleep here until ganache initializes
-make deploy-token
-```
-
-in the output of `make deploy-token` you will see:
-```
-  LinkToken: 0x5b1869d9a4c187f2eaa108f3062412ecf0526b24
-```
-If the output is different, update the variable in the next step.
-
-## Deploy chainlink node
-
-```bash
-# ganache generates 10 address for testing. This is first address generated by ganache. 
-# You can see it in the ganache logs. If your output does not contain this address, adjust this 
-# variable accordingly.
-export ADDRESS=0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1
-# Link token address from the above link token deployment.
-export LINK_TOKEN=0x5b1869d9a4c187f2eaa108f3062412ecf0526b24
-
-# Deploy the chainlink node into kind.
-make deploy-node
-
-# Wait for node to become ready:
-kubectl rollout status deploy/chainlink
-
-# Watch logs to see when it is really alive. It may crash a couple of times while db initializes..
-# just let it to it's thing for a few minutes
-#     kubectl logs deploy/chainlink -f
-
-# This may take a while, so if NODE_ADDR is empty, sleep might help.
-
-export NODE_ADDR=$(kubectl logs deploy/chainlink|grep "please deposit ETH into your address:"| tr ' ' '\n'|grep 0x)
-```
-
-## Fund the node with ETH and LINK
-In reality you want to be precise here. But since it's a test network, we'll just transfer a good
-amount that's enough for our tests.
-```bash
-# Add 10 eth to the node
-geth attach http://localhost:32000 -exec 'eth.sendTransaction({from: "'${ADDRESS}'",to: "'${NODE_ADDR}'", value: "10000000000000000000"})'
-
-# Add link to the node
-geth attach http://localhost:32000 --jspath ./scripts -exec 'loadScript("fund.js");transfer("'$LINK_TOKEN'", "'$ADDRESS'", "'$NODE_ADDR'");'
-
-# Optional - verify node balance:
-geth attach http://localhost:32000 --jspath ./scripts -exec 'loadScript("fund.js");getbalance("'$LINK_TOKEN'", "'$ADDRESS'", "'$NODE_ADDR'");'
-```
-
-## Deploy oracle
-Now we deploy the chainlink oracle contract.
-
-```bash
-# this will also add the node to the oracle (by using the address in the env-var )
-npm run deploy-oracle | tee node-tmp.txt
-export ORACLE_ADDR=$(grep "contract-address" node-tmp.txt | cut -f 2)
-rm node-tmp.txt
-```
-
-## Optional - Verify environment - Run the chainlink test consumer
-To verify that our environment is working, we can use the chainlink test consumer. You can also skip
-this step.
-
-### Add jobs to the node
-
-port forward to the node's ui/api port:
-```bash
-kubectl port-forward deploy/chainlink 6688&
-```
-
-Log-in in to the node:
-```bash
-curl -c cookiefile \
-  -d '{"email":"foo@example.com", "password":"apipassword"}' \
-  -X POST -H 'Content-Type: application/json' \
-   http://localhost:6688/sessions
-```
-
-Create jobs:
-```bash
-# optional: verify that the node sees its balances:
-# curl -c cookiefile http://localhost:6688/v2/user/balances
-
-# create the jobs:
-curl -b cookiefile http://localhost:6688/v2/specs -XPOST -H"content-type: application/json" -d '{"initiators":[{"type":"runlog","params":{"address":"'$ORACLE_ADDR'"}}],"tasks":[{"type":"httpget"},{"type":"jsonparse"},{"type":"ethbytes32"},{"type":"ethtx"}]}'
-
-curl -b cookiefile http://localhost:6688/v2/specs -XPOST -H"content-type: application/json" -d '{"initiators":[{"type":"runlog","params":{"address":"'$ORACLE_ADDR'"}}],"tasks":[{"type":"httppost"},{"type":"jsonparse"},{"type":"ethbytes32"},{"type":"ethtx"}]}'
-
-curl -b cookiefile http://localhost:6688/v2/specs -XPOST -H"content-type: application/json" -d '{"initiators":[{"type":"runlog","params":{"address":"'$ORACLE_ADDR'"}}],"tasks":[{"type":"httpget"},{"type":"jsonparse"},{"type":"multiply"},{"type":"ethint256"},{"type":"ethtx"}]}'
-
-# save job id of EthUint256 as we need it for later
-JOB_ID=$(curl -b cookiefile http://localhost:6688/v2/specs -XPOST -H"content-type: application/json" -d '{"initiators":[{"type":"runlog","params":{"address":"'$ORACLE_ADDR'"}}],"tasks":[{"type":"httpget"},{"type":"jsonparse"},{"type":"multiply"},{"type":"ethuint256"},{"type":"ethtx"}]}' | jq .data.id -r)
-
-curl -b cookiefile http://localhost:6688/v2/specs -XPOST -H"content-type: application/json" -d '{"initiators":[{"type":"runlog","params":{"address":"'$ORACLE_ADDR'"}}],"tasks":[{"type":"httpget"},{"type":"jsonparse"},{"type":"ethbool"},{"type":"ethtx"}]}'
-```
-
-### Create test with the test consumer
-
-```bash
-npm run deploy-testconsumer | tee node-tmp.txt
-export TEST_CONTRACT_ADDR=$(grep "contract-address" node-tmp.txt | cut -f 2)
-rm node-tmp.txt
-# fund the consumer contract:
-geth attach http://localhost:32000 --jspath ./scripts -exec 'loadScript("fund.js");transfer("'$LINK_TOKEN'", "'$ADDRESS'", "'$TEST_CONTRACT_ADDR'");'
-# verify funds contract:
-geth attach http://localhost:32000 --jspath ./scripts -exec 'loadScript("fund.js");getbalance("'$LINK_TOKEN'", "'$TEST_CONTRACT_ADDR'");'
-
-# make a request from the contract
-node scripts/testcontract.js $TEST_CONTRACT_ADDR $ORACLE_ADDR $JOB_ID
-```
-
-You should see a job executed in the node UI! success!!
-
-
-### Debugging
-if we see failure, we can get transaction id and debug with truffle:
-```bash
-kubectl logs deploy/ganache
-# get transaction id; go to the truffle directory containing the contract, and:
-../../node_modules/.bin/truffle debug --network ganache <transaction id>
-```
-
-
-# Deploy twitter adapter
-
-If we skipped the previous step, port forward to the node's ui/api port:
-```bash
-kubectl port-forward deploy/chainlink 6688&
-```
-
-Log-in in to the node (do this again, in case the cookie expired):
-```bash
-curl -c cookiefile \
-  -d '{"email":"foo@example.com", "password":"apipassword"}' \
-  -X POST -H 'Content-Type: application/json' \
-   http://localhost:6688/sessions
-```
-
-Register the twitter adapter with the node, so we have it's api keys:
-```
-curl -b cookiefile http://localhost:6688/v2/bridge_types -XPOST -H"content-type: application/json" -d @adapter/bridge.json > bridge_create.json
-export INCOMING_TOKEN=$(jq '.data.attributes.incomingToken' bridge_create.json -r)
-export OUTGOING_TOKEN=$(jq '.data.attributes.outgoingToken' bridge_create.json -r)
-rm bridge_create.json
-```
-
-Note: If you made a mistake creating the bridge, you can delete it like so: `curl -v -b cookiefile -X DELETE http://localhost:6688/v2/bridge_types/twitter` (mistakes happen)...
-
-Have your twitter secrets setup as environment variables:
-- TWITTER_API_KEY
-- TWITTER_API_KEY_SECRET
-- TWITTER_ACCESS_TOKEN
-- TWITTER_ACCESS_TOKEN_SECRET
-
-Now we can deploy the adapter:
-```bash
-# create a kubernetes secret with all our keys
-kubectl create secret generic twitter-adapter \
-    --from-literal=TWITTER_API_KEY=$TWITTER_API_KEY \
-    --from-literal=TWITTER_API_KEY_SECRET=$TWITTER_API_KEY_SECRET \
-    --from-literal=TWITTER_ACCESS_TOKEN=$TWITTER_ACCESS_TOKEN \
-    --from-literal=TWITTER_ACCESS_TOKEN_SECRET=$TWITTER_ACCESS_TOKEN_SECRET \
-    --from-literal=INCOMING_TOKEN=$INCOMING_TOKEN \
-    --from-literal=OUTGOING_TOKEN=$OUTGOING_TOKEN
-# deploy the external adapter
-make deploy-adapter
-```
-
-Add the twitter job spec to the node:
-
-```bash
-# add the current oracle address to the job spec
-sed -e "s/ORACLE_ADDR/$ORACLE_ADDR/" adapter/jobspec.json > jobspec.json
-# add the job to the node, and save the job id.
-export TWITTER_JOB_ID=$(curl -b cookiefile http://localhost:6688/v2/specs -XPOST -H"content-type: application/json" -d @jobspec.json | jq .data.id -r)
-rm jobspec.json
-```
-
-That's it! we are all setup!
-
-# Demo 1 - Command line
-
-Create a contract with these parameters:
-
-- link: address of link ERC20 token ($LINK_TOKEN)
-- deadline: how long before the contract expires (in seconds; for reference, 86400 seconds are 24 hours.)
-  when the contract expires with no approval, the originator can get a refund.
-- beneficiary: address of receiver of funds when approved. (for example, the 2nd address generated by ganache: 0xFFcf8FDEE72ac11b5c542428B35EEF5769C409f0)
-- amount: the amount of ETH that should be transferred to the contract address before it is ready for approval (in wei; 1000000000000000000 is 1 ETH)
-- approver_twitter_handle: the twitter handle of the approver
-- text: The text the approver needs to tweet for approval
-- oracle: the oracle address ($ORACLE_ADDR)
-- jobId: the jobId for the twitter verification ($TWITTER_JOB_ID),
-
-For example (adjust handle and appoval text):
-```bash
-export BENEFICIARY=0xFFcf8FDEE72ac11b5c542428B35EEF5769C409f0
-# Adjust this to your twitter handle
-export APPROVER_HANDLE=KohaviYuval
-export APPROVER_TEXT=Yes
-
-npm run build-twitterconsumer
-# deploy contract and get its address
-node scripts/twitterconsumer/deploy.js $LINK_TOKEN 86400 $BENEFICIARY 1000000000000000000 $APPROVER_HANDLE $APPROVER_TEXT $ORACLE_ADDR $TWITTER_JOB_ID | tee output.txt
-DEPLOYED_TC_ADDR=$(grep "contract address:" output.txt | cut -d: -f2 | tr -d ' ')
-rm output.txt
-# fund contract with link for the oracle
-geth attach http://localhost:32000 --jspath ./scripts -exec 'loadScript("fund.js");transfer("'$LINK_TOKEN'", "'$ADDRESS'", "'$DEPLOYED_TC_ADDR'");'
-
-# fund contract with ETH for the beneficiary
-node scripts/twitterconsumer/fund.js $DEPLOYED_TC_ADDR 1000000000000000000
-
-# check if the contract is ready (i.e. funded with link and ETH)
-node scripts/twitterconsumer/ready.js $DEPLOYED_TC_ADDR 
-```
-
-Now go and tweet your approval message. This is the signal that the contract was fulfilled
-and should be approved.
-
-Once the tweet is out (it needs to be publicly readable), request contract approval:
-```bash
-# request approval
-node scripts/twitterconsumer/requestApproval.js $DEPLOYED_TC_ADDR 
-```
-
-As we use a local test network, we'll need to make some noise on the network so that the transaction is confirmed. move some eth between ganache addresses 8,9 (this is not needed when using a public test network).
-```bash
-make_noise () {
-  geth attach http://localhost:32000 -exec 'eth.sendTransaction({from: "0xACa94ef8bD5ffEE41947b4585a84BdA5a3d3DA6E",to: "0x1dF62f291b2E969fB0849d99D9Ce41e2F137006e", value: "10000000000000000000"})'
-  geth attach http://localhost:32000 -exec 'eth.sendTransaction({from: "0x1dF62f291b2E969fB0849d99D9Ce41e2F137006e",to: "0xACa94ef8bD5ffEE41947b4585a84BdA5a3d3DA6E", value: "10000000000000000000"})'
-  geth attach http://localhost:32000 -exec 'eth.sendTransaction({from: "0xACa94ef8bD5ffEE41947b4585a84BdA5a3d3DA6E",to: "0x1dF62f291b2E969fB0849d99D9Ce41e2F137006e", value: "10000000000000000000"})'
-  geth attach http://localhost:32000 -exec 'eth.sendTransaction({from: "0x1dF62f291b2E969fB0849d99D9Ce41e2F137006e",to: "0xACa94ef8bD5ffEE41947b4585a84BdA5a3d3DA6E", value: "10000000000000000000"})'
-}
-make_noise
-```
-
-You should see the job making progress in the node UI. If it's stuck in the outgoing
-confirmation phase, make some more network noise:
-```
-make_noise
-```
-
-You can check that the contract is approved:
-```bash
-# Check that the contract is approved!
-node scripts/twitterconsumer/isapproved.js $DEPLOYED_TC_ADDR
-```
-
-Finally, you can withdraw the ETH from the contract to the beneficiary address!
-```bash
-# withdraw the funds!
-node scripts/twitterconsumer/withdraw.js $DEPLOYED_TC_ADDR $BENEFICIARY
-
-# check ETH balance:
-geth attach http://localhost:32000 -exec 'eth.getBalance("'$BENEFICIARY'")'
-```
-
-# Demo 2 - Web3 App
-
+Once demo-env setup is done, you can use ether the [cli demo instructions](./docs/cli.md) or the [ui demo instructions](./docs/ui.md).
 
 # FAQ
 
-Why was kubernetes used? Kubernetes is very power in the sense that the same manifests that were used
+## Why was kubernetes used? 
+Kubernetes is very power in the sense that the same manifests that were used
 locally, can be used in production (with minor tweaks). Using kubernetes and docker allows fully
 automating all the installation steps to simple `make` targets that work reliably.
+
+## Why not just have the approver call-out to the contract to approve it?
+The thought was that we want to keep blockchain interactions to a minimum, to allow
+existing real-world workflows to be used on the chain gradually.

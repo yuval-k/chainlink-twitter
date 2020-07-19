@@ -6,21 +6,25 @@
 
   let name = "";
   let web3;
+  let showbalances;
   let account;
   let linkcontract;
 
   let link = "";
   let deadline = "86400";
-  let beneficiary = "0xFFcf8FDEE72ac11b5c542428B35EEF5769C409f0";
   let amount = "1";
   let linkAmount = "1";
   let handle = "KohaviYuval";
   let text = "yes";
   let deployedContractAddress = "";
 
+  const eighteendecimals = "000000000000000000";
+
   let isReady = false;
+  let isApproved = false;
 
   // changeme
+  let beneficiary = "0xFFcf8FDEE72ac11b5c542428B35EEF5769C409f0";
   let oracle = "";
   let jobid = "";
 
@@ -28,6 +32,7 @@
     try {
       let accounts = await web3.eth.getAccounts();
       let requester = accounts[0];
+      let strAmount = String(amount)+eighteendecimals;
       console.log(
         "from:",
         requester,
@@ -35,13 +40,14 @@
         link,
         deadline,
         beneficiary,
-        amount,
+        strAmount,
         handle,
         text,
         oracle,
         jobid
       );
       var bytecode = contractData.bytecode;
+
 
       var c = new web3.eth.Contract(contractData.abi);
       var deployment = c.deploy({
@@ -50,7 +56,7 @@
           link,
           deadline,
           beneficiary,
-          amount*10e18,
+          strAmount,
           handle,
           text,
           oracle,
@@ -73,15 +79,18 @@
   }
 
   async function fund() {
+    let strAmount = String(amount)+eighteendecimals;
+    let strlLinkAmount = String(linkAmount)+eighteendecimals;
     var c = new web3.eth.Contract(contractData.abi, deployedContractAddress);
     let txhash = await c.methods
       .fund()
-      .send({ from: account, gas: 900000, value: amount*10e18});
+      .send({ from: account, gas: 900000, value: strAmount});
     console.log("txhash: ", txhash);
     txhash = await linkcontract.methods
-      .transfer(deployedContractAddress, linkAmount*10e18)
+      .transfer(deployedContractAddress, strlLinkAmount)
       .send({ from: account, gas: 900000 });
     console.log("txhash: ", txhash);
+    await showbalances();
   }
   async function ready() {
     var c = new web3.eth.Contract(contractData.abi, deployedContractAddress);
@@ -95,12 +104,18 @@
       .send({ from: account, gas: 900000 });
     console.log("txhash: ", txhash);
   }
+  async function checkIsApproved() {
+    var c = new web3.eth.Contract(contractData.abi, deployedContractAddress);
+    isApproved = await c.methods.approved().call({ from: beneficiary });
+    console.log("isApproved: ", isApproved);
+  }
   async function withdraw() {
     var c = new web3.eth.Contract(contractData.abi, deployedContractAddress);
     let txhash = await c.methods
       .withdraw()
       .send({ from: beneficiary, gas: 900000 });
     console.log("txhash: ", txhash);
+    showbalances();
   }
 </script>
 
@@ -157,6 +172,13 @@
     margin-top: 10px;
     margin-bottom: 10px;
     border-radius: 10px;
+    text-align: left;
+  }
+  .step h2 {
+    font-weight: bold;
+    text-decoration: underline;
+    text-align: center;
+    margin-bottom: 10px;
   }
 
   .step-action{
@@ -164,6 +186,8 @@
     border-radius: 5px;
     padding-right: 5px;
     padding-left: 5px;
+    display: block;
+    margin: 5px auto 0;
   }
 
   @media (min-width: 640px) {
@@ -180,90 +204,98 @@
 Connect to the blockchain:
   <Web3Connector
     bind:web3
+    bind:showbalances
     bind:account
     bind:link={linkcontract}
     bind:linkAddr={link} />
 
 
   </section>
-<section>
+  <div>
 Interact with the blockchain:
-
+  </div>
+<section>
+<div>First, create a contract</div>
 
   <div class="step originator">
     <h2>Deploy new contract</h2>
     In this step we will deploy a new contract, and have the receipent verify that it's terms are agreeable.
     Please customize the inputs below:
+    <label for="linkErc20">the address of the LINK ERC20 coin</label>
     <input
+     id="linkErc20"
       type="text"
-      alt="the address of the LINK ERC20 coin"
       placeholder="link"
       bind:value={link}
       class="has-default" />
+    <label for="exirtyInSeconds">the number of seconds until the contract expires in</label>
     <input
-      type="text"
-      alt="the number of seconds until the contract expires"
-      placeholder="deadline"
+      type="number"
+      min="1"
+      id="exirtyInSeconds"
+      placeholder="expiry"
       bind:value={deadline}
       class="has-default" />
-    <input type="text" alt="the address of the originator; i.e. the person paying" required="required" placeholder="originator" bind:value={account} />
-    <input type="text" alt="the address of the beneficiary; i.e. the person receiving the funds" required="required" placeholder="beneficiary" bind:value={beneficiary} />
-    <input type="number" alt="the amount of ETH the originator will pay" min="1" required="required" placeholder="amount" bind:value={amount} />
-    <input type="text" alt="the twitter handle of a trusted third party, that will verify the transaction" required="required" placeholder="handle" bind:value={handle} />
-    <input type="text" alt="the text that needs to be tweeted, so the transaction would be approved" required="required" placeholder="text" bind:value={text} />
+      (that's in {Math.floor(deadline/(24*3600))} days,
+       {Math.floor((deadline%(24*3600))/3600) } hours, 
+        {Math.floor((deadline%3600)/60) } minutes, 
+        {deadline%60 } seconds.
+       )
+    <label for="originatorAddress">the address of the originator; i.e. the person paying</label>
+    <input type="text" id="originatorAddress" required="required" placeholder="originator" bind:value={account} />
+    <label for="beneficiaryAddress">the address of the beneficiary; i.e. the person receiving the funds</label>
+    <input type="text" id="beneficiaryAddress" required="required" placeholder="beneficiary" bind:value={beneficiary} />
+    <label for="ethAmount">the amount of ETH the originator will pay</label>
+    <input type="number" id="ethAmount" min="1" required="required" placeholder="amount" bind:value={amount} />
+    <label for="twitterHandle">the twitter handle of a trusted third party, that will verify the transaction</label>
+    <input type="text" id="twitterHandle" required="required" placeholder="handle" bind:value={handle} />
+    <label for="approvalText">the text that needs to be tweeted, so the transaction would be approved</label>
+    <input type="text" id="approvalText" required="required" placeholder="text" bind:value={text} />
+    <label for="oracleAddress">oracle address</label>
     <input
       type="text"
+      id="oracleAddress"
       required="required"
       placeholder="oracle address"
       bind:value={oracle}
       class="has-default" />
+    <label for="oracleAddress">job ID</label>
     <input
       type="text"
+      id="jobId"
       required="required"
       placeholder="job id"
       bind:value={jobid}
       class="has-default" />
 
     <button class="step-action" on:click={deploy}>Deploy</button>
+
+  </div>
+  </section>
+  <div>
     {#if deployedContractAddress}
       <span>Deployed contract address: {deployedContractAddress}</span>
     {/if}
+Once the contract is deployed, you can continue:
   </div>
+<section >
   <div class="step originator">
     <h2>Fund</h2>
     Once the terms are agreed upon, the contract should be funded with ETH (for the beneficiary) and LINK
     (for the oracle).
-    <input
-      type="text"
-      placeholder="deployedContractAddress"
-      bind:value={deployedContractAddress}
-      class="has-default" />
-    <input
-      type="text"
-      placeholder="account"
-      bind:value={account}
-      class="has-default" />
-    <input type="number" min="1" placeholder="amount" bind:value={amount} />
+
+    <span>Add</span> {amount} ETH, and 
     <input type="number" min="1" placeholder="linkAmount" bind:value={linkAmount} />
+    LINK from {account}.
 
     <button class="step-action" on:click={fund}>Fund</button>
   </div>
 
   <div class="step beneficiary">
     <h2>Check Ready</h2>
-    To verify that the contract is funded, the beneficiary can use this step to check that the contract
+    To verify that the contract is funded, the beneficiary ({beneficiary}) can use this step to check that the contract
     has the ETH amount agreed upon, and the LINK amount for the oracle. Once ready, the beneficiary 
     can executre the real world transaction.
-    <input
-      type="text"
-      placeholder="deployedContractAddress"
-      bind:value={deployedContractAddress}
-      class="has-default" />
-    <input
-      type="text"
-      placeholder="beneficiary"
-      bind:value={beneficiary}
-      class="has-default" />
 
     <button class="step-action" on:click={ready}>Check Ready</button>
     <div>
@@ -299,25 +331,31 @@ Interact with the blockchain:
   </div>
 
   <div class="step beneficiary">
-    <h2>Verify Approval</h2>
-    Check that the contract is approved - the oracle did its job!
-    <input
-      type="text"
-      placeholder="deployedContractAddress"
-      bind:value={deployedContractAddress}
-      class="has-default" />
-    <button class="step-action" on:click={requestApproval}>Request Approval</button>
+    <h2>Request Oracle Approval</h2>
+    The beneficiary ({beneficiary}) can now ask to check if the contract is approved - this step 
+    will invoke the oracle, that will check twitter to verify the contract.
+
+    <button class="step-action" on:click={requestApproval}>Request Oracle Approval</button>
+  </div>
+
+  <div class="step beneficiary">
+    <h2>Check Approved</h2>
+    Optional: Verify that the oracle did its job approved the contract.
+
+    <button class="step-action" on:click={checkIsApproved}>Check Approved</button>
+    <div>
+      <label for="checkboxApproved">Approved:</label>
+      <input
+        type="checkbox"
+        id="checkboxApproved"
+        disabled="disabled"
+        bind:checked={isApproved} />
+    </div>
   </div>
 
   <div class="step beneficiary">
     <h2>Withdraw</h2>
-    The transaction is complete - the beneficiary can now width the funds!
-    <input type="text" placeholder="beneficiary" bind:value={beneficiary} />
-    <input
-      type="text"
-      placeholder="deployedContractAddress"
-      bind:value={deployedContractAddress}
-      class="has-default" />
+    The transaction is complete - the beneficiary ({beneficiary}) can now width the funds!
     <button class="step-action" on:click={withdraw}>Withdraw</button>
   </div>
 </section>
