@@ -230,7 +230,7 @@
 
   </section>
   <div>
-<h1>Interact with the blockchain</h1>
+<h1>Create a Contract</h1>
 
 Note:
 <ul class="list-disc">
@@ -240,7 +240,6 @@ Note:
 </ul>
   </div>
 <section>
-<div>First, create a contract</div>
 
   <div class="step originator">
     <h2>Deploy new contract</h2>
@@ -293,7 +292,7 @@ Note:
       bind:value={jobid}
       class="has-default" />
 
-    <button class="step-action" on:click={deploy}>Deploy</button>
+    <button class="step-action" on:click={deploy}>Deploy Contract to the Blockchain</button>
 
   </div>
   </section>
@@ -305,6 +304,7 @@ Note:
     {/if}
   </div>
 <section >
+<h1>Interact with the Contract</h1>
   <div class="step originator">
     <h2>Fund</h2>
     Once the terms are agreed upon, the contract should be funded with ETH (for the beneficiary) and LINK
@@ -314,7 +314,7 @@ Note:
     <input type="number" min="1" placeholder="linkAmount" bind:value={linkAmount} />
     LINK from {account}.
 
-    <button class="step-action" on:click={fund}>Fund</button>
+    <button class="step-action" on:click={fund}>Fund contract with {amount} ETH and {linkAmount} LINK</button>
 
       <div>{fundResult}</div>
   </div>
@@ -322,13 +322,12 @@ Note:
   <div class="step beneficiary">
     <h2>Check Ready</h2>
     To verify that the contract is funded, the beneficiary ({beneficiary}) can use this step to check that the contract
-    has the ETH amount agreed upon, and the LINK amount for the oracle. Once ready, the beneficiary 
-    can executre the real world transaction.
+    has the ETH amount agreed upon, and the LINK amount for the oracle.
+    
+    Once ready, the beneficiary can executre the real world transaction.
 
     <button class="step-action" on:click={ready}>Check Ready</button>
     <div>
-      <label for="checkboxIsReady">Ready:</label>
-
     {#if isReady !== null}
       {#if isReady}
         <span>Contract is ready!</span>
@@ -342,8 +341,8 @@ Note:
   <div class="step approver">
     <h2>Approve</h2>
     Once the real world transaction was performed, the trusted 3rd party needs to approve by publicly
-    tweeting the agreed upton text. Please tweet as: @{handle} a tweet containing this: {text} Here's a quick
-    link for you:
+    tweeting the agreed upton text. Please tweet as: <b>@{handle}</b> a tweet containing
+    this: "<em>{text}</em>". Here's a quick link for you:
     <div class="tweet">
       <div class="text-lg md:text-left">@{handle}</div>
       <div>{text}</div>
@@ -367,6 +366,8 @@ Note:
     will invoke the oracle, that will check twitter to verify the contract.
 
     <button class="step-action" on:click={requestApproval}>Request Oracle Approval</button>
+    Note: if you are on a test chain, you may need to make some arbitrary transactions so that 
+    the oracle transactions are confirmed.
     <div>{requestApprovalResult}</div>
   </div>
 
@@ -376,8 +377,6 @@ Note:
 
     <button class="step-action" on:click={checkIsApproved}>Check Approved</button>
     <div>
-      <label for="checkboxApproved">Approved:</label>
-
     {#if isApproved !== null}
       {#if isApproved}
         <span>Contract is approved!</span>

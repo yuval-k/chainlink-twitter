@@ -33,8 +33,8 @@
     "deploy-oracle": "cd contracts/oracle && truffle migrate --network ganache --reset -all",
     "deploy-testconsumer": "cd contracts/testconsumer && truffle migrate --network ganache --reset -all",
 
-    "build": "cross-env NODE_ENV=production webpack --config examples/app/webpack.config.js",
-    "dev": "webpack-dev-server --content-base public --config examples/app/webpack.config.js"
+    "demo-build": "cross-env NODE_ENV=production webpack --config examples/app/webpack.config.js",
+    "demo-dev": "webpack-dev-server --content-base examples/app/public --config examples/app/webpack.config.js"
   },
   "author": "",
   "license": "ISC"
