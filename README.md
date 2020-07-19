@@ -54,6 +54,7 @@ docker - docker files for 3rd party program that are not available in docker hub
 LinkToken - git submodule to https://github.com/smartcontractkit/LinkToken. Used to deploy the Link token to our local test chain.
 examples - The UI code to for the UI demo.
 manifests - kubernetes manifests to install everything automatically.
+public - Skeleton files for the UI demo.
 scripts - Helper web3 JS scripts used in this readme/demos to perform operations on the blockchain.
 ```
 

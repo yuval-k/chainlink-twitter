@@ -18,10 +18,14 @@
   let text = "yes";
   let deployedContractAddress = "";
 
+  let fundResult = "";
+  let requestApprovalResult = "";
+  let withdrawResult = "";
+
   const eighteendecimals = "000000000000000000";
 
-  let isReady = false;
-  let isApproved = false;
+  let isReady = null;
+  let isApproved = null;
 
   // changeme
   let beneficiary = "0xFFcf8FDEE72ac11b5c542428B35EEF5769C409f0";
@@ -79,18 +83,23 @@
   }
 
   async function fund() {
-    let strAmount = String(amount)+eighteendecimals;
-    let strlLinkAmount = String(linkAmount)+eighteendecimals;
-    var c = new web3.eth.Contract(contractData.abi, deployedContractAddress);
-    let txhash = await c.methods
-      .fund()
-      .send({ from: account, gas: 900000, value: strAmount});
-    console.log("txhash: ", txhash);
-    txhash = await linkcontract.methods
-      .transfer(deployedContractAddress, strlLinkAmount)
-      .send({ from: account, gas: 900000 });
-    console.log("txhash: ", txhash);
-    await showbalances();
+    try {
+      let strAmount = String(amount)+eighteendecimals;
+      let strlLinkAmount = String(linkAmount)+eighteendecimals;
+      var c = new web3.eth.Contract(contractData.abi, deployedContractAddress);
+      let txhash = await c.methods
+        .fund()
+        .send({ from: account, gas: 900000, value: strAmount});
+      console.log("txhash: ", txhash);
+      txhash = await linkcontract.methods
+        .transfer(deployedContractAddress, strlLinkAmount)
+        .send({ from: account, gas: 900000 });
+      console.log("txhash: ", txhash);
+      await showbalances();
+      fundResult = "success!";
+    }catch (e){
+      fundResult = "error"+ e.message;
+    }
   }
   async function ready() {
     var c = new web3.eth.Contract(contractData.abi, deployedContractAddress);
@@ -98,11 +107,16 @@
     console.log("isReady: ", isReady);
   }
   async function requestApproval() {
-    var c = new web3.eth.Contract(contractData.abi, deployedContractAddress);
-    let txhash = await c.methods
-      .requestApproval()
-      .send({ from: account, gas: 900000 });
-    console.log("txhash: ", txhash);
+    try {
+      var c = new web3.eth.Contract(contractData.abi, deployedContractAddress);
+      let txhash = await c.methods
+        .requestApproval()
+        .send({ from: account, gas: 900000 });
+      console.log("txhash: ", txhash);
+      requestApprovalResult = "approval requested!";
+    }catch (e){
+      requestApprovalResult = "error"+ e.message;
+    }
   }
   async function checkIsApproved() {
     var c = new web3.eth.Contract(contractData.abi, deployedContractAddress);
@@ -110,12 +124,17 @@
     console.log("isApproved: ", isApproved);
   }
   async function withdraw() {
-    var c = new web3.eth.Contract(contractData.abi, deployedContractAddress);
-    let txhash = await c.methods
-      .withdraw()
-      .send({ from: beneficiary, gas: 900000 });
-    console.log("txhash: ", txhash);
-    showbalances();
+    try {
+      var c = new web3.eth.Contract(contractData.abi, deployedContractAddress);
+      let txhash = await c.methods
+        .withdraw()
+        .send({ from: beneficiary, gas: 900000 });
+      console.log("txhash: ", txhash);
+      showbalances();
+      withdrawResult = "withdraw success!";
+    }catch (e){
+      withdrawResult = "error"+ e.message;
+    }
   }
 </script>
 
@@ -132,20 +151,13 @@
   .approver {
     background-color: lightgreen;
   }
-  main {
-    text-align: center;
-    padding: 1em;
-    max-width: 240px;
-    margin: 0 auto;
-  }
-
   h1 {
     color: #ff3e00;
     text-transform: uppercase;
     font-size: 4em;
     font-weight: 100;
   }
-  h1 {
+  .title{
     @apply bg-black text-white;
   }
 
@@ -190,6 +202,12 @@
     margin: 5px auto 0;
   }
 
+  main {
+    padding: 1em;
+    max-width: 240px;
+    margin: 0 auto;
+  }
+
   @media (min-width: 640px) {
     main {
       max-width: none;
@@ -199,9 +217,9 @@
 
 <main>
 
-  <h1>Hello {name}!</h1>
+  <h1 class="title">Hello {name}!</h1>
   <section>
-Connect to the blockchain:
+<h1>Connect to the blockchain</h1>
   <Web3Connector
     bind:web3
     bind:showbalances
@@ -212,7 +230,14 @@ Connect to the blockchain:
 
   </section>
   <div>
-Interact with the blockchain:
+<h1>Interact with the blockchain</h1>
+
+Note:
+<ul class="list-disc">
+  <li>Blue steps are performed by the originator</li>
+  <li>Red steps are performed by the beneficiary</li>
+  <li>Green steps are performed by the trusted 3rd party</li>
+</ul>
   </div>
 <section>
 <div>First, create a contract</div>
@@ -275,8 +300,9 @@ Interact with the blockchain:
   <div>
     {#if deployedContractAddress}
       <span>Deployed contract address: {deployedContractAddress}</span>
+    {:else}
+      Once the contract is deployed, you can continue.
     {/if}
-Once the contract is deployed, you can continue:
   </div>
 <section >
   <div class="step originator">
@@ -289,6 +315,8 @@ Once the contract is deployed, you can continue:
     LINK from {account}.
 
     <button class="step-action" on:click={fund}>Fund</button>
+
+      <div>{fundResult}</div>
   </div>
 
   <div class="step beneficiary">
@@ -300,11 +328,14 @@ Once the contract is deployed, you can continue:
     <button class="step-action" on:click={ready}>Check Ready</button>
     <div>
       <label for="checkboxIsReady">Ready:</label>
-      <input
-        type="checkbox"
-        id="checkboxIsReady"
-        disabled="disabled"
-        bind:checked={isReady} />
+
+    {#if isReady !== null}
+      {#if isReady}
+        <span>Contract is ready!</span>
+      {:else}
+        <span>Contract is not ready!</span>
+      {/if}
+    {/if}
     </div>
   </div>
 
@@ -336,6 +367,7 @@ Once the contract is deployed, you can continue:
     will invoke the oracle, that will check twitter to verify the contract.
 
     <button class="step-action" on:click={requestApproval}>Request Oracle Approval</button>
+    <div>{requestApprovalResult}</div>
   </div>
 
   <div class="step beneficiary">
@@ -345,11 +377,14 @@ Once the contract is deployed, you can continue:
     <button class="step-action" on:click={checkIsApproved}>Check Approved</button>
     <div>
       <label for="checkboxApproved">Approved:</label>
-      <input
-        type="checkbox"
-        id="checkboxApproved"
-        disabled="disabled"
-        bind:checked={isApproved} />
+
+    {#if isApproved !== null}
+      {#if isApproved}
+        <span>Contract is approved!</span>
+      {:else}
+        <span>Contract is not approved!</span>
+      {/if}
+    {/if}
     </div>
   </div>
 
@@ -357,6 +392,7 @@ Once the contract is deployed, you can continue:
     <h2>Withdraw</h2>
     The transaction is complete - the beneficiary ({beneficiary}) can now width the funds!
     <button class="step-action" on:click={withdraw}>Withdraw</button>
+    <div>{withdrawResult}</div>
   </div>
 </section>
 </main>

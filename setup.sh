@@ -72,8 +72,5 @@ sed -e "s/ORACLE_ADDR/$ORACLE_ADDR/" adapter/jobspec.json > jobspec.json
 export TWITTER_JOB_ID=$(curl -b cookiefile http://localhost:6688/v2/specs -XPOST -H"content-type: application/json" -d @jobspec.json | jq .data.id -r)
 rm jobspec.json
 
-
 echo export ORACLE_ADDR=$ORACLE_ADDR
 echo export TWITTER_JOB_ID=$TWITTER_JOB_ID
-
-
