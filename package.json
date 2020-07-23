@@ -8,20 +8,21 @@
     "web3": "1.2.6"
   },
   "devDependencies": {
-    "autoprefixer": "^9.8.5",
-    "postcss-loader": "^3.0.0",
-    "tailwindcss": "^1.5.1",
-    "@rollup/plugin-node-resolve": "^7.1.0",
     "@rollup/plugin-commonjs": "^11.0.2",
-    "eslint-plugin-svelte3": "^2.7.3",
-    "release-it": "^13.1.2",
-    "svelte": "^3.0.0",
+    "@rollup/plugin-node-resolve": "^7.1.0",
+    "autoprefixer": "^9.8.5",
     "cross-env": "^5.2.0",
     "css-loader": "^2.1.1",
+    "eslint-plugin-svelte3": "^2.7.3",
+    "markdown-it": "^11.0.0",
     "mini-css-extract-plugin": "^0.6.0",
+    "postcss-loader": "^3.0.0",
+    "release-it": "^13.1.2",
     "serve": "^11.0.0",
     "style-loader": "^0.23.1",
+    "svelte": "^3.0.0",
     "svelte-loader": "2.13.3",
+    "tailwindcss": "^1.5.1",
     "webpack": "^4.30.0",
     "webpack-cli": "^3.3.0",
     "webpack-dev-server": "^3.3.1"
@@ -32,9 +33,9 @@
     "build-twitterconsumer": "cd contracts/twitterconsumer && truffle build",
     "deploy-oracle": "cd contracts/oracle && truffle migrate --network ganache --reset -all",
     "deploy-testconsumer": "cd contracts/testconsumer && truffle migrate --network ganache --reset -all",
-
     "demo-build": "cross-env NODE_ENV=production webpack --config examples/app/webpack.config.js",
-    "demo-dev": "webpack-dev-server --content-base examples/app/public --config examples/app/webpack.config.js"
+    "demo-dev": "webpack-dev-server --content-base examples/app/public --config examples/app/webpack.config.js",
+    "gen-setupsh": "cd docs; ./generate_setup-sh.js > ../setup.sh"
   },
   "author": "",
   "license": "ISC"

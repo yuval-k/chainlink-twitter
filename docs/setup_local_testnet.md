@@ -21,12 +21,14 @@ one works fine).
 ## Optional: 
 For adapter development, you will need `go`.
 To re-generate the db yaml, you will need `helm`. use the following command:
-```
+
+```bash
 helm template release bitnami/postgresql > manifests/postgresql.yaml
 ```
 ## Bootstrap
+
 First, install dependencies with:
-```
+```bash
 git submodule update --init --recursive
 npm install
 ```
@@ -71,14 +73,8 @@ export LINK_TOKEN=0x5b1869d9a4c187f2eaa108f3062412ecf0526b24
 # Deploy the chainlink node into kind.
 make deploy-node
 
-# Wait for node to become ready:
+# Wait for node to become ready (it may crash a couple of times while the db initializes):
 kubectl rollout status deploy/chainlink
-
-# Watch logs to see when it is really alive. It may crash a couple of times while db initializes..
-# just let it to it's thing for a few minutes
-#     kubectl logs deploy/chainlink -f
-
-# This may take a while, so if NODE_ADDR is empty, sleep might help.
 
 export NODE_ADDR=$(kubectl logs deploy/chainlink|grep "please deposit ETH into your address:"| tr ' ' '\n'|grep 0x)
 ```
@@ -107,11 +103,11 @@ export ORACLE_ADDR=$(grep "contract-address" node-tmp.txt | cut -f 2)
 rm node-tmp.txt
 ```
 
-## Optional - Verify environment - Run the chainlink test consumer
+# Optional - Verify environment - Run the chainlink test consumer
 To verify that our environment is working, we can use the chainlink test consumer. You can also skip
 this step.
 
-### Add jobs to the node
+## Add jobs to the node
 
 port forward to the node's ui/api port:
 ```bash
@@ -144,7 +140,7 @@ JOB_ID=$(curl -b cookiefile http://localhost:6688/v2/specs -XPOST -H"content-typ
 curl -b cookiefile http://localhost:6688/v2/specs -XPOST -H"content-type: application/json" -d '{"initiators":[{"type":"runlog","params":{"address":"'$ORACLE_ADDR'"}}],"tasks":[{"type":"httpget"},{"type":"jsonparse"},{"type":"ethbool"},{"type":"ethtx"}]}'
 ```
 
-### Create test with the test consumer
+## Create test with the test consumer
 
 ```bash
 npm run deploy-testconsumer | tee node-tmp.txt
@@ -162,7 +158,7 @@ node scripts/testcontract.js $TEST_CONTRACT_ADDR $ORACLE_ADDR $JOB_ID
 You should see a job executed in the node UI! success!!
 
 
-### Debugging
+## Debugging
 if we see failure, we can get transaction id and debug with truffle:
 ```bash
 kubectl logs deploy/ganache
@@ -175,6 +171,8 @@ kubectl logs deploy/ganache
 If we skipped the previous step, port forward to the node's ui/api port:
 ```bash
 kubectl port-forward deploy/chainlink 6688&
+# give kubectl a second to start working
+sleep 1
 ```
 
 Log-in in to the node (do this again, in case the cookie expired):
@@ -185,8 +183,9 @@ curl -c cookiefile \
    http://localhost:6688/sessions
 ```
 
-Register the twitter adapter with the node, so we have it's api keys:
-```
+Registe/r the twitter adapter with the node, so we have it's api keys:
+
+```bash
 curl -b cookiefile http://localhost:6688/v2/bridge_types -XPOST -H"content-type: application/json" -d @adapter/bridge.json > bridge_create.json
 export INCOMING_TOKEN=$(jq '.data.attributes.incomingToken' bridge_create.json -r)
 export OUTGOING_TOKEN=$(jq '.data.attributes.outgoingToken' bridge_create.json -r)

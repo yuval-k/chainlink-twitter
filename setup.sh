@@ -1,5 +1,6 @@
 #!/bin/bash -e
 
+# section: Demo Environment Setup
 make deploy-testnet
 kubectl rollout status deploy/ganache
 # may need to sleep here to see logs
@@ -18,17 +19,10 @@ export LINK_TOKEN=0x5b1869d9a4c187f2eaa108f3062412ecf0526b24
 # Deploy the chainlink node into kind.
 make deploy-node
 
-# Wait for node to become ready:
+# Wait for node to become ready (it may crash a couple of times while the db initializes):
 kubectl rollout status deploy/chainlink
 
-# Watch logs to see when it is really alive. It may crash a couple of times while db initializes..
-# just let it to it's thing for a few minutes
-#     kubectl logs deploy/chainlink -f
-
-# This may take a while, so if NODE_ADDR is empty, sleep might help.
-
 export NODE_ADDR=$(kubectl logs deploy/chainlink|grep "please deposit ETH into your address:"| tr ' ' '\n'|grep 0x)
-kubectl port-forward deploy/chainlink 6688&
 
 # Add 10 eth to the node
 geth attach http://localhost:32000 -exec 'eth.sendTransaction({from: "'${ADDRESS}'",to: "'${NODE_ADDR}'", value: "10000000000000000000"})'
@@ -39,12 +33,15 @@ geth attach http://localhost:32000 --jspath ./scripts -exec 'loadScript("fund.js
 # Optional - verify node balance:
 geth attach http://localhost:32000 --jspath ./scripts -exec 'loadScript("fund.js");getbalance("'$LINK_TOKEN'", "'$ADDRESS'", "'$NODE_ADDR'");'
 
-
 # this will also add the node to the oracle (by using the address in the env-var )
 npm run deploy-oracle | tee node-tmp.txt
 export ORACLE_ADDR=$(grep "contract-address" node-tmp.txt | cut -f 2)
 rm node-tmp.txt
 
+# section: Deploy twitter adapter
+kubectl port-forward deploy/chainlink 6688&
+# give kubectl a second to start working
+sleep 1
 
 curl -c cookiefile \
   -d '{"email":"foo@example.com", "password":"apipassword"}' \
@@ -56,6 +53,7 @@ export INCOMING_TOKEN=$(jq '.data.attributes.incomingToken' bridge_create.json -
 export OUTGOING_TOKEN=$(jq '.data.attributes.outgoingToken' bridge_create.json -r)
 rm bridge_create.json
 
+# create a kubernetes secret with all our keys
 kubectl create secret generic twitter-adapter \
     --from-literal=TWITTER_API_KEY=$TWITTER_API_KEY \
     --from-literal=TWITTER_API_KEY_SECRET=$TWITTER_API_KEY_SECRET \
@@ -74,3 +72,4 @@ rm jobspec.json
 
 echo export ORACLE_ADDR=$ORACLE_ADDR
 echo export TWITTER_JOB_ID=$TWITTER_JOB_ID
+
