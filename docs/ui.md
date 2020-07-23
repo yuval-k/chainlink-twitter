@@ -3,7 +3,7 @@ To start the UI, run:
 npm run demo-dev
 ```
 
-OR open the pre-build version at [examples/app/public/index.html](examples/app/public/index.html).
+OR open the pre-built version at [examples/app/public/index.html](examples/app/public/index.html).
 
 ## Connect to the chain
 Assuming you are running the setup script, click on "Option 2: Connect to a Provider"
