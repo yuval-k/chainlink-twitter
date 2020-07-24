@@ -18,3 +18,5 @@ Adjust the other fields to your liking, and deploy the contract using the "Deplo
 Once deployed, you can go over the flow step by step. Note that Blue steps are steps taken by the originator. Pink steps are by the beneficiary. And the green step is taken by the trusted 3rd party.
 
 In the real world each individual will have it's own screen with just the steps relevant to him. For simplicity and to make it easier to understand the steps in order, I've combined all the steps to a single page.
+
+If metamask fails deploy the contract, go to Settings > Advanced > Reset Account
