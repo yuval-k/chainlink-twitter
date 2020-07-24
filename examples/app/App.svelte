@@ -21,6 +21,7 @@
   let fundResult = "";
   let requestApprovalResult = "";
   let withdrawResult = "";
+  let deployResult = "";
 
   const eighteendecimals = "000000000000000000";
 
@@ -71,14 +72,11 @@
       let gasAmount = await deployment.estimateGas({ from: requester });
       console.log("gas estimate:");
       console.log(gasAmount);
-      await deployment
-        .send({ from: requester, gas: 3000000 })
-        .on("receipt", function(receipt) {
-          console.log("deployed contract address: ", receipt.contractAddress);
-          deployedContractAddress = receipt.contractAddress;
-        });
+      let newContractInstance = await deployment.send({ from: requester, gas: 3000000 });
+      deployedContractAddress = newContractInstance.options.address;
+      deployResult = "contract deployed.";
     } catch (err) {
-      name = "error " + err;
+      deployResult = "error " + err.message;
     }
   }
 
@@ -297,6 +295,7 @@ Note:
   </div>
   </section>
   <div>
+    <div>{deployResult}</div>
     {#if deployedContractAddress}
       <span>Deployed contract address: {deployedContractAddress}</span>
     {:else}
