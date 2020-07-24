@@ -16,9 +16,6 @@ spec:
         image: yuval.dev/ganache-cli
         args:
           - --deterministic
-          - --networkId
-          # this seems to be a constant; it is what it is
-          - "1337"
           - --host
           - "0.0.0.0"
         imagePullPolicy: Never

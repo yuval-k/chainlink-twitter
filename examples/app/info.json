@@ -34,7 +34,6 @@
         "shortName": "rop",
         "chain": "ETH",
         "network": "ganache",
-        "networkId": 1337,
         "nativeCurrency": {"name":"Ropsten Ether","symbol":"ROP","decimals":18},
         "rpc": ["https://ropsten.infura.io/v3/${INFURA_API_KEY}"],
         "faucets": [],
