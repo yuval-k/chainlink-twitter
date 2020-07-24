@@ -32,7 +32,7 @@ The flow is as follows:
 contract TwitterConsumer is ChainlinkClient {
     uint256 private constant ORACLE_PAYMENT = 1 * LINK;
 
-    address public /* payable */ originator;
+    address /* payable */ originator;
     address public /* payable */ beneficiary;
     uint256 public deadline;
     uint256 public amount;
@@ -142,9 +142,6 @@ contract TwitterConsumer is ChainlinkClient {
     }
     function getEthBalance() public view returns (uint256) {
         return address(this).balance;
-    }
-    function approved() public view returns (bool) {
-        return approved;
     }
     function getLinkBalance() public view returns (uint256) {
         LinkTokenInterface link = LinkTokenInterface(chainlinkTokenAddress());
