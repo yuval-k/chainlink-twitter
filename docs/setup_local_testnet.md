@@ -1,4 +1,4 @@
-Note: we have a setup script that automates most of this. This is a more detailed guide to understand what it does.
+Note: we have a [setup script](../scripts/setup.sh) that automates most of this. This is a more detailed guide to understand what it does.
 
 # Prerequisites for demo scripts
 We'll start by setting up an automated demo environment, that allows to this this project in a pre re-producible way.
@@ -42,7 +42,7 @@ We'll start by creating a local setup in kubernetes. To keep things simple, we w
 setup everything on our laptop. Kubernetes is used so we can replicate the setup fast in a
 reproducible fashion. This can also potentially run in CI systems.
 
-## setup script
+## Setup script
 Assuming you have all the requirements above, you can use the auto-generated [setup.sh](../scripts/setup.sh)
 to run everything in one command (just run the bootstrap part one time at first).
 

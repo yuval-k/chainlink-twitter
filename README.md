@@ -20,6 +20,10 @@ a specific phrase (a.k.a approval text) provided to the contract at its creation
 A custom chainlink adapter checks twitter and approves the contract.
 Once the contract is approved, the beneficiary can withdraw the funds.
 
+# Video Demo
+
+https://open.lbry.com/@dev:f/httpsopen.lbry.comTheSchiffReport9peter-schiff-s-team-wins-bitcoin-debatefrFyqsdSyyx2f7J7LBG166YsZBvRYcCnxBt1798:d?r=FyqsdSyyx2f7J7LBG166YsZBvRYcCnxB
+
 # Use cases
 One example use case is hiring a social media influencer to promote your brand. Using this solution, the a brand that wants twitter exposure (the originator),
 create a contract with the influencer's (the beneficiary) ETH address, twitter handle and the text that should be twitter. 
