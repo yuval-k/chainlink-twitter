@@ -77,3 +77,10 @@ node scripts/twitterconsumer/withdraw.js $DEPLOYED_TC_ADDR $BENEFICIARY
 # check ETH balance:
 geth attach http://localhost:32000 -exec 'eth.getBalance("'$BENEFICIARY'")'
 ```
+
+
+# Clean-up
+Just run
+```bash
+kind delete cluster
+```

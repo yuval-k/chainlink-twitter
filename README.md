@@ -64,7 +64,7 @@ scripts - Helper web3 JS scripts used in this readme/demos to perform operations
 We have two demos in this repo, a UI one, and a command line one.
 Both require some setup. see the [setup](./docs/setup_local_testnet.md) for more info. there's a convience [setup.sh](./setup.sh) script that you can just run (assuming you have all the command line tools in place).
 
-Once demo-env setup is done, you can use ether the [cli demo instructions](./docs/cli.md) or the [ui demo instructions](./docs/ui.md).
+Once demo-env setup is done, you can use either the [cli demo instructions](./docs/cli.md) or the [ui demo instructions](./docs/ui.md).
 
 # FAQ
 

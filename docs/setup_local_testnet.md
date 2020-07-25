@@ -42,11 +42,11 @@ We'll start by creating a local setup in kubernetes. To keep things simple, we w
 setup everything on our laptop. Kubernetes is used so we can replicate the setup fast in a
 reproducible fashion. This can also potentially run in CI systems.
 
-## setup.sh
+## setup script
 Assuming you have all the requirements above, you can use the auto-generated [setup.sh](../scripts/setup.sh)
 to run everything in one command (just run the bootstrap part one time at first).
 
-To re-generate `setup.sh` from this readme, run `npm run gen-setupsh`.
+To re-generate `setup.sh` from this file, run `npm run gen-setupsh`.
 
 # Demo Environment Setup
 
@@ -240,4 +240,4 @@ Write the oracle address and job id so it's auto filled for the ui demo:
 echo '{"jobId":"'$TWITTER_JOB_ID'", "oracleAddr":"'$ORACLE_ADDR'"}' > examples/app/public/oracle.json
 ```
 
-That's it! we are all setup!
+That's it! we are all setup! You can now go and try either the [cli demo instructions](./cli.md) or the [ui demo instructions](./ui.md).
