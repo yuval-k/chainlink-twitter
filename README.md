@@ -52,7 +52,7 @@ The flow is as follows:
 adapter - the adapter that confirms a contract in response to a tweet mentioning it's address.
 contracts - solidity contracts for oracle and consumers are here.
 docker - docker files for 3rd party program that are not available in docker hub. i.e. ganache-cli.
-LinkToken - git submodule to https://github.com/smartcontractkit/LinkToken. Used to deploy the Link token to our local test chain.
+LinkToken - git sub-module to https://github.com/smartcontractkit/LinkToken. Used to deploy the Link token to our local test chain.
 examples - The UI code to for the UI demo.
 manifests - kubernetes manifests to install everything automatically.
 public - Skeleton files for the UI demo.
@@ -62,7 +62,7 @@ scripts - Helper web3 JS scripts used in this readme/demos to perform operations
 # Demo
 
 We have two demos in this repo, a UI one, and a command line one.
-Both require some setup. see the [setup](./docs/setup_local_testnet.md) for more info. there's a convience [setup.sh](./setup.sh) script that you can just run (assuming you have all the command line tools in place).
+Both require some setup. see the [setup](./docs/setup_local_testnet.md) for more info. there's a convenience [setup.sh](./setup.sh) script that you can just run (assuming you have all the command line tools in place).
 
 Once demo-env setup is done, you can use either the [cli demo instructions](./docs/cli.md) or the [ui demo instructions](./docs/ui.md).
 

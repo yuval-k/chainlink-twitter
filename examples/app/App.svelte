@@ -10,6 +10,8 @@
       // import module for side effects
       let data = await fetch('./oracle.json');
       networkData = await data.json();
+      oracle = networkData.oracleAddr;
+      jobid = networkData.jobId;
     } catch(e) {
       // no seeded data; ignore for now.
       console.log("no seeded data:", e.message);
@@ -44,11 +46,6 @@
   let beneficiary = "0xFFcf8FDEE72ac11b5c542428B35EEF5769C409f0";
   let oracle = "";
   let jobid = "";
-
-  if (networkData) {
-    oracle = networkData.oracleAddr;
-    jobid = networkData.jobId;
-  }
 
   async function deploy() {
     try {
