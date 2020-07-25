@@ -16,7 +16,12 @@ Go go through the demo steps detailed below, you will need:
 - geth (used for scripting)
 
 You will also need twitter API keys (you can open a twitter developer account to get these. the free
-one works fine).
+one works fine). set your twitter keys in these environment variables:
+
+- TWITTER_API_KEY
+- TWITTER_API_KEY_SECRET
+- TWITTER_ACCESS_TOKEN
+- TWITTER_ACCESS_TOKEN_SECRET
 
 ## Optional: 
 For adapter development, you will need `go`.
@@ -36,6 +41,12 @@ npm install
 We'll start by creating a local setup in kubernetes. To keep things simple, we will use KinD to
 setup everything on our laptop. Kubernetes is used so we can replicate the setup fast in a
 reproducible fashion. This can also potentially run in CI systems.
+
+## setup.sh
+Assuming you have all the requirements above, you can use the auto-generated [setup.sh](../scripts/setup.sh)
+to run everything in one command (just run the bootstrap part one time at first).
+
+To re-generate `setup.sh` from this readme, run `npm run gen-setupsh`.
 
 # Demo Environment Setup
 
@@ -222,6 +233,11 @@ sed -e "s/ORACLE_ADDR/$ORACLE_ADDR/" adapter/jobspec.json > jobspec.json
 # add the job to the node, and save the job id.
 export TWITTER_JOB_ID=$(curl -b cookiefile http://localhost:6688/v2/specs -XPOST -H"content-type: application/json" -d @jobspec.json | jq .data.id -r)
 rm jobspec.json
+```
+Write the oracle address and job id so it's auto filled for the ui demo:
+
+```bash
+echo '{"jobId":"'$TWITTER_JOB_ID'", "oracleAddr":"'$ORACLE_ADDR'"}' > examples/app/public/oracle.json
 ```
 
 That's it! we are all setup!

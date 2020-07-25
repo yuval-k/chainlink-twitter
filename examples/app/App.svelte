@@ -4,6 +4,18 @@
   import contractData from "../../contracts/twitterconsumer/build/contracts/TwitterConsumer.json";
   import linkContractData from "../../LinkToken/build/contracts/LinkToken.json";
 
+  let networkData = null;
+  (async () => {
+    try{
+      // import module for side effects
+      let data = await fetch('./oracle.json');
+      networkData = await data.json();
+    } catch(e) {
+      // no seeded data; ignore for now.
+      console.log("no seeded data:", e.message);
+    }
+  })();
+
   let name = "";
   let web3;
   let showbalances;
@@ -32,6 +44,11 @@
   let beneficiary = "0xFFcf8FDEE72ac11b5c542428B35EEF5769C409f0";
   let oracle = "";
   let jobid = "";
+
+  if (networkData) {
+    oracle = networkData.oracleAddr;
+    jobid = networkData.jobId;
+  }
 
   async function deploy() {
     try {
