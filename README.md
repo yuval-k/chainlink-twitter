@@ -92,6 +92,7 @@ existing real-world workflows to be used on the chain gradually.
 
 The general vision of this project, is to bring the block chain to where people are today. Some possible enhancements:
 
+- To mitigate against mistake, require that a tweet will be public for a certain amount of time before allowing withdrawal.
 - Eliminate the need for both LINK and ETH by using uniswap to get link on the fly when fund() is called. The originator will have to send extra ETH that can be refunded if needed.
 - Extend approval to email - the trusted third party can email a special email address the approval text
 - Allow for automated approval - In software for example:
