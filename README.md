@@ -22,7 +22,14 @@ Once the contract is approved, the beneficiary can withdraw the funds.
 
 # Video Demo
 
-https://open.lbry.com/@dev:f/httpsopen.lbry.comTheSchiffReport9peter-schiff-s-team-wins-bitcoin-debatefrFyqsdSyyx2f7J7LBG166YsZBvRYcCnxBt1798:d?r=FyqsdSyyx2f7J7LBG166YsZBvRYcCnxB
+In Lbry:
+
+[![video demo](https://spee.ch/6/e945626a0e200dfb.png)](lbry://@dev#f/chainlink-contracts-irl#1)
+
+or in Youtube:
+
+[![video demo](https://img.youtube.com/vi/45in4CyPdxA/0.jpg)](https://www.youtube.com/watch?v=45in4CyPdxA)
+
 
 # Use cases
 One example use case is hiring a social media influencer to promote your brand. Using this solution, the a brand that wants twitter exposure (the originator),
@@ -80,3 +87,13 @@ automating all the installation steps to simple `make` targets that work reliabl
 ## Why not just have the approver call-out to the contract to approve it?
 The thought was that we want to keep blockchain interactions to a minimum, to allow
 existing real-world workflows to be used on the chain gradually.
+
+# Future Ideas
+
+The general vision of this project, is to bring the block chain to where people are today. Some possible enhancements:
+
+- Eliminate the need for both LINK and ETH by using uniswap to get link on the fly when fund() is called. The originator will have to send extra ETH that can be refunded if needed.
+- Extend approval to email - the trusted third party can email a special email address the approval text
+- Allow for automated approval - In software for example:
+  - a bug that has failing test - a payout can be made to a programmer once the test is no longer failing (which can be verified automatically).
+  - a bounty attached to an issue can be paid automatically once the issue is closed by the project maintainers.
