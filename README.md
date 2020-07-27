@@ -24,7 +24,7 @@ Once the contract is approved, the beneficiary can withdraw the funds.
 
 In Lbry:
 
-[![video demo](https://spee.ch/6/e945626a0e200dfb.png)](lbry://@dev#f/chainlink-contracts-irl#1)
+[![video demo](https://spee.ch/6/e945626a0e200dfb.png)](https://open.lbry.com/@dev:f/chainlink-contracts-irl:1?r=FyqsdSyyx2f7J7LBG166YsZBvRYcCnxB)
 
 or in Youtube:
 
