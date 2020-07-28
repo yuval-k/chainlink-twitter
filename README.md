@@ -98,3 +98,4 @@ The general vision of this project, is to bring the block chain to where people 
 - Allow for automated approval - In software for example:
   - a bug that has failing test - a payout can be made to a programmer once the test is no longer failing (which can be verified automatically).
   - a bounty attached to an issue can be paid automatically once the issue is closed by the project maintainers.
+- Add a factory contract, to make it easier to reason about the code deployed.
